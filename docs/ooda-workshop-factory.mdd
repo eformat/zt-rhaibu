@@ -1,0 +1,73 @@
+stateDiagram-v2
+    direction TB
+
+    state "AI USE CASE" as USECASE
+    state "CAPTURE" as CAP
+    state "OBSERVE" as OBS
+    state "ORIENT" as ORI
+    state "DO" as DO
+    state "ACT" as ACT
+    state "SHIP" as SHIP
+
+    note right of CAP
+        video → ffmpeg → keyframes
+    end note
+
+    note right of OBS
+        /workshop-observe
+        Analyze screenshots
+        Extract user flows
+        Write observations to RAC
+    end note
+
+    note right of ORI
+        /workshop-orient
+        RAC requirements
+        Architecture decisions
+        Workshop design
+        rac validate
+    end note
+
+    note right of DO
+        /workshop-do
+        Scaffold showroom content
+        Scaffold automation infra
+        make build · helm lint
+        GitHub Pages deploy
+    end note
+
+    note right of ACT
+        /workshop-act
+        ArgoCD sync to prelude
+        Playwright browser tests
+        Fix-and-test loop
+        Acceptance report
+    end note
+
+    USECASE --> CAP
+    CAP --> OBS
+
+    OBS --> ORI : plan
+    ORI --> DO : scaffold
+    DO --> ACT : deploy & test
+
+    ACT --> SHIP : all green ✅
+    ACT --> OBS : gaps found 🔄
+    ACT --> ORI : scope change 🔄
+    ACT --> DO : content fix 🔄
+
+    classDef capture fill:#ffb347,stroke:#e67e22,color:#000,font-weight:bold
+    classDef observe fill:#87ceeb,stroke:#2980b9,color:#000,font-weight:bold
+    classDef orient fill:#dda0dd,stroke:#8e44ad,color:#000,font-weight:bold
+    classDef do fill:#98d8c8,stroke:#27ae60,color:#000,font-weight:bold
+    classDef act fill:#f7dc6f,stroke:#f39c12,color:#000,font-weight:bold
+    classDef ship fill:#2ecc71,stroke:#1a9c4a,color:#fff,font-weight:bold
+
+    classDef usecase fill:#ff6b6b,stroke:#c0392b,color:#fff,font-weight:bold
+    class USECASE usecase
+    class CAP capture
+    class OBS observe
+    class ORI orient
+    class DO do
+    class ACT act
+    class SHIP ship
