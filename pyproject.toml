@@ -1,0 +1,9 @@
+[project]
+name = "zt-rhaibu"
+version = "0.1.0"
+description = "OODA-loop workshop factory for OpenShift/RHOAI"
+requires-python = ">=3.12"
+dependencies = ["rac-core"]
+
+[tool.setuptools]
+packages = []
