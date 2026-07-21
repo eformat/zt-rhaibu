@@ -294,6 +294,77 @@ spec:
         - p, proj:infra:admin, applicationsets, *, infra/*, allow
 ```
 
+## DataScienceCluster v2 API
+
+RHOAI 3.x requires `apiVersion: datasciencecluster.opendatahub.io/v2`. The v1 API
+is rejected by the admission webhook when v2-only components exist on the cluster.
+
+The v2 API adds components not present in v1: `aipipelines` (replaces
+`datasciencepipelines`), `trainer`, `mlflowoperator`, `feastoperator`,
+`llamastackoperator`. The v1 components `modelmeshserving` and `codeflare` are removed.
+
+All components must be listed in the template — set unused ones to `Removed`:
+
+```yaml
+apiVersion: datasciencecluster.opendatahub.io/v2
+kind: DataScienceCluster
+metadata:
+  name: default-dsc
+spec:
+  components:
+    dashboard:
+      managementState: Managed
+    workbenches:
+      managementState: Managed
+    aipipelines:
+      managementState: Removed
+    kserve:
+      managementState: Removed
+    modelregistry:
+      managementState: Removed
+    ray:
+      managementState: Removed
+    trustyai:
+      managementState: Removed
+    kueue:
+      managementState: Removed
+    trainingoperator:
+      managementState: Removed
+    trainer:
+      managementState: Removed
+    mlflowoperator:
+      managementState: Removed
+    feastoperator:
+      managementState: Removed
+    llamastackoperator:
+      managementState: Removed
+```
+
+## Screenshot Manifest Integration
+
+The `workshop-screenshot` skill can consume a `capture/screenshot-manifest.yaml` in
+the showroom repo. The manifest follows the pattern from `openshift-workshop-builder`:
+
+```yaml
+workshop:
+  slug: workbench-create
+  title: RHOAI Workbench Creation
+  product: rhai-3.3
+
+shots:
+  - name: login-page
+    url: "{{ console_url }}"
+    output: content/modules/ROOT/assets/images/01-keycloak-login.png
+    caption: Keycloak login page
+    wait_for:
+      - "getByRole('heading', { name: /log in/i })"
+    steps: []
+```
+
+When a manifest exists, `workshop-screenshot` uses it as the authoritative shot list
+instead of scanning AsciiDoc `image::` references. The showroom `values.yaml`
+`deployer.domain` and credential values are substituted into `{{ }}` placeholders.
+
 ## Deployer Block
 
 Injected by the Ansible provisioning role. Provide placeholder defaults:

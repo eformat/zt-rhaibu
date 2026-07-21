@@ -242,6 +242,11 @@ Based on infrastructure requirements from RAC:
   Each is a minimal chart with a Subscription CR template.
 - **Platform configurations** (platform layer): e.g., DataScienceCluster CR,
   ServingRuntime CRs, InferenceService templates, namespace setup.
+  **Important:** DataScienceCluster CRs MUST use `apiVersion: datasciencecluster.opendatahub.io/v2`.
+  The v1 API is rejected when v2-only components (mlflowoperator, trainer, etc.) exist.
+  Include all v2 components in the template (dashboard, workbenches, aipipelines,
+  kserve, modelregistry, ray, trustyai, kueue, trainingoperator, trainer,
+  mlflowoperator, feastoperator, llamastackoperator) — set unused ones to `Removed`.
 - **Tenant resources** (tenant layer): e.g., per-user namespaces, workbenches,
   RBAC bindings, secrets.
 
