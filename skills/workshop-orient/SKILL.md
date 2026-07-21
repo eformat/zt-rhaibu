@@ -35,6 +35,8 @@ contract between planning and implementation.
 - Follow `rac-capture` patterns for artifact creation — interview the user, confirm before writing.
 - Follow `rac-review` patterns for validation — work findings worst-first until all pass.
 - Use `rac schema <type>` to get real artifact schemas. Never invent fields or sections.
+- See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
+  and quality rules.
 
 ## Prerequisites
 
@@ -250,3 +252,8 @@ infrastructure code from these requirements."
 - Analyzing screenshots — use `workshop-observe`
 - Deploying or testing — use `workshop-act`
 - Recording ownership, sprints, priorities, or due dates — those belong in a work tracker
+
+## Related Skills
+
+- `/workshop-observe` — Analyze demo screenshots for observations
+- `/workshop-do` — Scaffold content and infrastructure from these requirements

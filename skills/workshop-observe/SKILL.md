@@ -29,6 +29,9 @@ enabled: true
 Analyze demo application visuals to produce a structured observation document that
 feeds the Orient step of the OODA workshop pipeline.
 
+See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
+and quality rules.
+
 ## Goal
 
 Turn a set of demo screenshots or keyframes into a factual observation document in
@@ -197,3 +200,8 @@ Prompt: "Observations complete. Run `/workshop-orient` to plan the workshop from
 - Planning the workshop structure or creating RAC requirements — that is `workshop-orient`
 - Deploying or testing anything — that is `workshop-act`
 - General image analysis unrelated to workshop creation
+
+## Related Skills
+
+- `/workshop-orient` — Plan the workshop from these observations
+- `/workshop-screenshot` — Capture screenshots from a live cluster

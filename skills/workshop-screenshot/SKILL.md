@@ -39,6 +39,10 @@ requirements to determine what to capture rather than relying on a static list.
   to find existing `image::` references and surrounding context.
 - Use **openshift-4-21-expert** for OpenShift console navigation patterns.
 - Use **openshift-ai-3-3-expert** for RHOAI dashboard navigation patterns.
+- After embedding screenshots, recommend running **showroom:verify-content** to
+  validate the updated content against Red Hat quality standards.
+- See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
+  and quality rules.
 - Reference `${CLAUDE_SKILL_DIR}/references/capture-patterns.md` for reusable
   playwright-cli patterns for common OpenShift/RHOAI screenshot scenarios.
 
@@ -88,7 +92,7 @@ Scan all `.adoc` files under `content/modules/ROOT/pages/`:
 grep -rn 'image::' ~/git/zt-<slug>-showroom/content/modules/ROOT/pages/
 ```
 
-For each `image::filename.png[alt,width]` reference, extract:
+For each `image::filename.png[alt,link=self,window=blank,width=700]` reference, extract:
 - **filename** — the screenshot to capture (e.g., `06-workbench-creation-form.png`)
 - **page** — which `.adoc` file contains the reference
 - **context** — the surrounding AsciiDoc text (2-3 lines before the image reference)
@@ -168,12 +172,12 @@ If a capture fails (element not found, navigation error, timeout):
 
 For each successfully captured screenshot:
 
-- **Existing reference**: if `image::filename.png[alt,width]` already exists in the
+- **Existing reference**: if `image::filename.png[alt,link=self,window=blank,width=700]` already exists in the
   `.adoc` page, the file replacement is sufficient — no AsciiDoc edit needed
 - **New screenshot** (from gap analysis): insert an `image::` reference at the
   appropriate location:
   - Find the exercise step or verification block that corresponds to the screenshot
-  - Insert `image::filename.png[Description,800]` on the line after the instruction
+  - Insert `image::filename.png[Description,link=self,window=blank,width=700]` on the line after the instruction
     text, preceded by `+` for AsciiDoc list continuation
   - Use the context from the RAC requirement for the alt text
 
@@ -297,3 +301,9 @@ playwright-cli -s=workshop-screenshots close
 - Analyzing demo applications — use `workshop-observe`
 - Video recording or screen recording
 - Screenshot editing, cropping, or annotation
+
+## Related Skills
+
+- `/workshop-act` — Deploy and test the workshop end-to-end
+- `/workshop-do` — Scaffold content and infrastructure from RAC requirements
+- `/showroom:verify-content` — Validate content against Red Hat quality standards

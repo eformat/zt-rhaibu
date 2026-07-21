@@ -40,6 +40,8 @@ Scaffold two codebases from RAC requirements: a content repo and an infrastructu
 - Reference `https://github.com/rhpds/ai-lightning-wordswarm-showroom` as the content exemplar.
 - Reference `https://github.com/rhpds/ai-lightning-labs-automation` as the infrastructure exemplar.
 - Infrastructure patterns are documented in `${CLAUDE_SKILL_DIR}/references/infra-patterns.md`.
+- See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
+  and quality rules.
 
 ## Prerequisites
 
@@ -130,14 +132,14 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
 - `NN-module-MM-<slug>.adoc` — one page per module requirement, with:
   - `:navtitle:` and `:toc: macro` attributes
   - `== Learning objectives` section (bulleted list from RAC requirement)
-  - Numbered `== Exercise N: Title` sections with `[.copypaste]` code blocks
+  - Numbered `== Exercise N: Title` sections with `[source,role="execute"]` code blocks
   - `=== Verify` section after each exercise
   - `== Module summary` with key takeaways
 - `NN-conclusion.adoc` — wrap-up with per-module summary, resources, thank you
 
 **AsciiDoc rules:**
-- Every command uses `[.copypaste]` role for send-to-terminal support
-- Use `[source,bash,subs="attributes"]` for blocks containing `{attribute}` values
+- Every command uses `[source,role="execute"]` for the Showroom copy/execute button
+- Use `[source,bash,role="execute",subs="attributes"]` for blocks containing `{attribute}` values
 - Use `{attribute}` substitution for all environment-specific values — never hardcode
 - Page naming: `NN-descriptive-name.adoc` with 2-digit prefix for ordering
 
@@ -281,7 +283,7 @@ Prompt: "Workshop scaffolded. Run `/workshop-act` to deploy and test on the prel
 - Never hardcode cluster-specific values in infra. Use `deployer.*` and helm values.
 - Follow the `openshift-workshop-builder` patterns exactly for content structure.
 - Follow the `ai-lightning-labs-automation` patterns exactly for infrastructure.
-- Every command in a module must be wrapped in `[.copypaste]` blocks.
+- Every command in a module must use `[source,role="execute"]` blocks.
 - Keep Helm charts minimal — one chart per logical workload.
 - Initialize git before running `make build` — Antora requires at least one commit.
 - Do not create screenshots — that requires a running cluster and is deferred to
@@ -293,3 +295,11 @@ Prompt: "Workshop scaffolded. Run `/workshop-act` to deploy and test on the prel
 - Deployment to a cluster (workshop-act)
 - Workshop planning or requirement gathering (workshop-orient)
 - Analyzing demo applications (workshop-observe)
+
+## Related Skills
+
+- `/workshop-orient` — Plan the workshop and create RAC requirements
+- `/workshop-act` — Deploy and test the workshop end-to-end
+- `/workshop-screenshot` — Capture and embed screenshots into content
+- `/openshift-workshop-builder` — AsciiDoc/Antora scaffolding patterns
+- `/showroom:verify-content` — Validate content against Red Hat quality standards

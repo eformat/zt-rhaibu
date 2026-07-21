@@ -38,6 +38,10 @@ criteria pass, then signal ready for human-in-the-loop review.
 - Use **openshift-4-21-expert** for cluster diagnostics when deployments fail.
 - Use **openshift-ai-3-3-expert** for RHOAI-specific diagnostics.
 - Read RAC requirements from `~/git/zt-<slug>-rac/requirements/` for acceptance criteria to validate.
+- Use **workshop-screenshot** for capturing and embedding screenshots into AsciiDoc content.
+- Run **showroom:verify-content** as a quality gate after content and screenshots are ready.
+- See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
+  and quality rules.
 
 ## Prerequisites
 
@@ -177,7 +181,7 @@ For each RAC requirement, execute its acceptance criteria:
 **Content tests** (for each module page):
 - Open the page URL with playwright-cli
 - Verify the page renders (check for the module title text)
-- Verify `[.copypaste]` blocks are present (check for code block elements)
+- Verify `[source,role="execute"]` blocks are present (check for code block elements)
 - Capture a screenshot and save to `content/modules/ROOT/assets/images/`
   using deterministic filenames
 
@@ -194,6 +198,27 @@ For each RAC requirement, execute its acceptance criteria:
 |----------------|------------------|--------|----------|
 | RHAIBU-REQ-001 | Login to console | PASS | screenshot: 01-login.png |
 | RHAIBU-REQ-002 | Deploy model | FAIL | Error: timeout waiting for pod |
+
+### 5b. Content quality verification
+
+If the `showroom:verify-content` skill is available (RHDP skills marketplace plugin
+installed), run it against the showroom content:
+
+```
+/showroom:verify-content
+```
+
+This spawns parallel agents per module, checking against Red Hat quality standards:
+- AsciiDoc structure and formatting (missing execute roles, broken blocks)
+- Accessibility compliance (image alt text, heading hierarchy)
+- Red Hat style guide (product names, acronym expansion)
+- Technical accuracy (undefined attributes, broken xrefs)
+
+**Severity handling:**
+- **Critical** / **High** — must fix before proceeding to the fix-and-test loop
+- **Warning** / **Info** — report in the validation table but do not block
+
+If the plugin is not installed, skip this step and note it in the final report.
 
 ### 6. Fix-and-test loop
 
@@ -277,3 +302,10 @@ Prompt the user to commit updated screenshots and any content fixes.
 - Analyzing demo applications — use `workshop-observe`
 - Production deployment or multi-tenant provisioning
 - Performance testing or load testing
+
+## Related Skills
+
+- `/workshop-do` — Scaffold content and infrastructure from RAC requirements
+- `/workshop-screenshot` — Capture and embed screenshots into AsciiDoc content
+- `/showroom:verify-content` — Validate content against Red Hat quality standards
+- `/agnosticv:catalog-builder` — Create RHDP catalog entry when ready to publish

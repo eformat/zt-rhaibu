@@ -27,6 +27,8 @@ Reference implementation: `https://github.com/rhpds/ai-lightning-wordswarm-showr
 - Use the **OpenShift 4.21 Expert** skill for OpenShift Container Platform 4.21 flows, console paths, cluster-admin steps, and version-specific product behavior.
 - Use the **OpenShift AI 3.3 Expert** skill for Red Hat OpenShift AI 3.3 flows, workbenches, model serving, pipelines, and AI-specific administration.
 - Use the **Playwright CLI** skill to log in, navigate the console, capture screenshots, and save debugging artifacts.
+- See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
+  and quality rules.
 
 ## Default Workflow
 
@@ -45,7 +47,7 @@ Reference implementation: `https://github.com/rhpds/ai-lightning-wordswarm-showr
 - One Showroom repo per workshop. The repo root contains `site.yml`, `ui-config.yml`, `Makefile`, and a `content/` Antora component.
 - All content is AsciiDoc (`.adoc`), never Markdown.
 - Keep prose instructional and testable. Every lab step should map to a user action or a visible expected result.
-- Use `[.copypaste]` blocks for every command the learner should run. This enables the send-to-terminal button in the Showroom UI.
+- Use `[source,role="execute"]` for every command the learner should run. This enables the Showroom UI copy/execute button.
 - Use `{attribute}` substitution for environment-specific values (URLs, usernames, passwords, cluster domains). Define defaults in `content/antora.yml` — the Showroom platform overrides them at deploy time.
 - Use real screenshots only from the target product/version, not stock images or copied docs screenshots.
 - Keep screenshot filenames deterministic so re-captures replace the same files.
@@ -330,17 +332,16 @@ Every `.adoc` page starts with a level-0 title and optional metadata:
 :icons: font
 ```
 
-### Lab Steps with Copy-Paste Blocks
+### Lab Steps with Execute Blocks
 
-Use AsciiDoc ordered lists with continuation (`+`) and the `[.copypaste]` role for every command the learner should run:
+Use AsciiDoc ordered lists with continuation (`+`) and `[source,role="execute"]` for every command the learner should run:
 
 ```asciidoc
 == Exercise 1: Set up your environment
 
 . Export your API token:
 +
-[.copypaste]
-[source,bash]
+[source,role="execute"]
 ----
 export TOKEN=$(oc get secret maas-secret -o jsonpath='{.data.token}' | base64 -d)
 echo "Token obtained: ${TOKEN:0:20}..."
@@ -348,8 +349,7 @@ echo "Token obtained: ${TOKEN:0:20}..."
 
 . Verify connectivity:
 +
-[.copypaste]
-[source,bash]
+[source,role="execute"]
 ----
 curl -s -H "Authorization: Bearer $TOKEN" \
   {maas_api_url}/v1/models | jq .
@@ -360,8 +360,8 @@ You should see model metadata confirming the endpoint is live.
 
 Key rules:
 - The `+` on its own line continues the list item (keeps numbering intact).
-- `[.copypaste]` **must** appear on the line immediately before the `[source,...]` block.
-- Use `[source,bash,subs="attributes"]` when the code block contains `{attribute}` substitutions.
+- `[source,role="execute"]` enables the Showroom UI copy/execute button.
+- Use `[source,bash,role="execute",subs="attributes"]` when the code block contains `{attribute}` substitutions.
 - Without `subs="attributes"`, curly-brace placeholders are rendered literally (useful when they are shell variables like `${VAR}`).
 
 ### Attribute Substitution in Commands
@@ -369,8 +369,7 @@ Key rules:
 When a command contains environment-specific values, use Antora attributes:
 
 ```asciidoc
-[.copypaste]
-[source,bash,subs="attributes"]
+[source,bash,role="execute",subs="attributes"]
 ----
 oc login {openshift_api_url} -u {user} -p {password}
 ----
@@ -468,7 +467,7 @@ Each page should follow this structure where applicable:
 2. Module introduction (1-2 paragraphs of context)
 3. Learning objectives
 4. Conceptual background (if needed)
-5. Numbered exercises with `[.copypaste]` blocks
+5. Numbered exercises with `[source,role="execute"]` blocks
 6. Verification block after each exercise
 7. Module summary (what was accomplished, key takeaways)
 8. Teaser for next module
@@ -478,7 +477,7 @@ Each page should follow this structure where applicable:
 1. Login steps with credentials via `{user}` / `{password}` attributes
 2. Project/namespace setup
 3. Workbench or environment creation (with screenshots)
-4. Tool verification (`[.copypaste]` blocks for version checks)
+4. Tool verification (`[source,role="execute"]` blocks for version checks)
 
 ### Conclusion (`NN-conclusion.adoc`)
 
