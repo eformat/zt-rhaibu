@@ -52,17 +52,8 @@ Check these before starting. If any are missing, print what's needed and stop.
 - `oc` CLI — `oc version` (OpenShift client, authenticated as cluster-admin)
 - `helm` — `helm version --short`
 - `node` / `npm` — `node --version && npm --version`
-- Python 3.12+ — `python3 --version`
-- `rac` CLI — `source .venv/bin/activate && rac --version`
+- `decided` CLI — `decided --version` ([install](https://github.com/asdecided/core/releases))
 - `playwright-cli` — for browser automation and screenshot capture
-
-If `rac` is not available, set it up:
-```bash
-cd "$(git rev-parse --show-toplevel)"
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
 
 **Required cluster access:**
 - `oc` authenticated to a prelude OpenShift cluster (`oc whoami` succeeds)
@@ -106,7 +97,7 @@ oc whoami --show-server
 oc get clusterversion -o jsonpath='{.items[0].status.desired.version}'
 oc get co --no-headers | grep -v "True.*False.*False" | head -10
 oc get pods -n openshift-gitops -l app.kubernetes.io/name=argocd-server --no-headers
-rac --version
+decided --version
 ```
 
 If any check fails, report the issue and stop. Do not deploy to an unhealthy cluster.

@@ -35,16 +35,12 @@ This factory repo (`zt-rhaibu`) holds only skills and tooling — no per-worksho
 
 ## RAC
 
-Requirements As Code via `rac-core`. Activate the venv first:
+Requirements As Code via [`asdecided-core`](https://github.com/asdecided/core/releases). Assumes `decided` is on PATH.
 
-```bash
-source .venv/bin/activate
-```
-
-Artifact ID prefix: `RHAIBU-`. Key CLI commands: `rac schema`, `rac new`, `rac validate`, `rac review`, `rac relationships`.
+Artifact ID prefix: `RHAIBU-`. Key CLI commands: `decided schema`, `decided new`, `decided validate`, `decided review`, `decided relationships`.
 
 Each workshop's RAC lives in its own repo (`~/git/zt-<slug>-rac/`), not in this factory repo.
-Skills scaffold the RAC repo with `rac init --key RHAIBU` during Observe/Orient.
+Skills scaffold the RAC repo with `decided init --key RHAIBU` during Observe/Orient.
 
 In the workshop RAC a full set of folders could include:
 

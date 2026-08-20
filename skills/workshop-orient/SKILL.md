@@ -3,7 +3,7 @@ name: workshop-orient
 description: >
   Plan an OpenShift/RHOAI workshop using Requirements As Code (RAC). Takes observations
   from workshop-observe (or freeform input) and produces structured RAC artifacts:
-  requirements, decisions, and designs in the rac/ directory. Uses the rac-core CLI to
+  requirements, decisions, and designs in the rac/ directory. Uses the asdecided-core CLI to
   scaffold and validate artifacts. Use when someone wants to "plan a workshop", "create
   workshop requirements", "orient on workshop content", "define workshop scope", "write
   workshop RAC", "decide workshop structure", or "design a workshop". Also trigger for
@@ -44,20 +44,11 @@ Check these before starting. If any are missing, print what's needed and stop.
 
 **Required tools:**
 - `git` — for RAC repo management
-- Python 3.12+ — `python3 --version`
-- `rac` CLI — `source .venv/bin/activate && rac --version`
-
-If `rac` is not available, set it up:
-```bash
-cd "$(git rev-parse --show-toplevel)"
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
+- `decided` CLI — `decided --version` ([install](https://github.com/asdecided/core/releases))
 
 **Required state:**
-- A workshop RAC repo at `~/git/zt-<slug>-rac/` with `.rac/config.yaml`
-  (created by workshop-observe, or run `rac init --key RHAIBU` if not)
+- A workshop RAC repo at `~/git/zt-<slug>-rac/` with `.decided/config.yaml`
+  (created by workshop-observe, or run `decided init --key RHAIBU` if not)
 - An observation document in the RAC repo's `assets/` directory (from workshop-observe)
   or freeform input
 
@@ -75,7 +66,7 @@ ls -d ~/git/zt-*-rac/ 2>/dev/null
 If exactly one exists, use it. If multiple exist, list them and ask the user to
 choose. If none exist, ask the user for the slug.
 
-The RAC repo lives at `~/git/zt-<slug>-rac/`. All `rac` commands in this workflow
+The RAC repo lives at `~/git/zt-<slug>-rac/`. All `decided` commands in this workflow
 run from that directory.
 
 If the RAC repo does not exist (workshop-observe was not run first):
@@ -84,11 +75,10 @@ If the RAC repo does not exist (workshop-observe was not run first):
 mkdir -p ~/git/zt-<slug>-rac/assets
 cd ~/git/zt-<slug>-rac
 git init
-source .venv/bin/activate
-rac init --key RHAIBU
+decided init --key RHAIBU
 ```
 
-If the repo exists, check for `.rac/config.yaml` and initialize if missing.
+If the repo exists, check for `.decided/config.yaml` and initialize if missing.
 
 ### 2. Read observations
 
@@ -102,15 +92,15 @@ inline text describing the workshop concept and interview the user to establish 
 Before creating any artifact, read the schema for each type you will use:
 
 ```bash
-rac schema requirement
-rac schema decision
-rac schema design
+decided schema requirement
+decided schema decision
+decided schema design
 ```
 
 Use only the section names, frontmatter fields, and controlled values these schemas
 define. Never guess or hard-code a field the schema does not list.
 
-**Frontmatter restriction:** `rac new` scaffolds the correct frontmatter fields
+**Frontmatter restriction:** `decided new` scaffolds the correct frontmatter fields
 (`schema_version`, `id`, `type`). Do not add extra fields like `status` or `category`
 to the YAML frontmatter — those are body-level metadata sections (e.g., `## Status`),
 not frontmatter keys. The only supported frontmatter fields are: `schema_version`,
@@ -118,15 +108,15 @@ not frontmatter keys. The only supported frontmatter fields are: `schema_version
 
 ### 4. Create the workshop-level requirement
 
-Scaffold with `rac new`, then Read the scaffold, then Write the populated content:
+Scaffold with `decided new`, then Read the scaffold, then Write the populated content:
 
 ```bash
 cd ~/git/zt-<slug>-rac
-rac new requirement requirements/<workshop-slug>.md
+decided new requirement requirements/<workshop-slug>.md
 ```
 
-After `rac new` creates the file, you MUST Read it before Writing content into it.
-`rac new` writes a TODO-placeholder file to disk — Read it to satisfy the
+After `decided new` creates the file, you MUST Read it before Writing content into it.
+`decided new` writes a TODO-placeholder file to disk — Read it to satisfy the
 Read-before-Write requirement, then Write the full content.
 
 Fill in:
@@ -144,7 +134,7 @@ For each workshop module identified in observations, scaffold a requirement:
 
 ```bash
 cd ~/git/zt-<slug>-rac
-rac new requirement requirements/<workshop-slug>-module-<N>.md
+decided new requirement requirements/<workshop-slug>-module-<N>.md
 ```
 
 Each module requirement includes:
@@ -166,7 +156,7 @@ suffixes break resolution:
 ```
 
 Do NOT write `- RHAIBU-KXYZ1234ABCD: Human Readable Title` — the title suffix
-prevents rac-core from resolving the reference.
+prevents asdecided-core from resolving the reference.
 
 ### 6. Create architectural decisions
 
@@ -174,7 +164,7 @@ For each significant technology choice, scaffold a decision:
 
 ```bash
 cd ~/git/zt-<slug>-rac
-rac new decision decisions/<topic-slug>.md
+decided new decision decisions/<topic-slug>.md
 ```
 
 At minimum, create decisions for:
@@ -192,7 +182,7 @@ with bare artifact IDs (same format as requirement links — no descriptive suff
 
 ```bash
 cd ~/git/zt-<slug>-rac
-rac new design designs/<workshop-slug>-architecture.md
+decided new design designs/<workshop-slug>-architecture.md
 ```
 
 Document:
@@ -213,14 +203,14 @@ Link the design to requirements and decisions using `## Related Requirements` an
 Run validation and fix any findings:
 
 ```bash
-rac validate ~/git/zt-<slug>-rac/
-rac review ~/git/zt-<slug>-rac/
-rac relationships ~/git/zt-<slug>-rac/ --validate
+decided validate ~/git/zt-<slug>-rac/
+decided review ~/git/zt-<slug>-rac/
+decided relationships ~/git/zt-<slug>-rac/ --validate
 ```
 
 Work findings in priority order (blocking first, then advisory). Re-validate after
-each fix. The work is done only when `rac validate` and
-`rac relationships --validate` both exit 0.
+each fix. The work is done only when `decided validate` and
+`decided relationships --validate` both exit 0.
 
 ### 9. Report and handoff
 
@@ -238,11 +228,11 @@ infrastructure code from these requirements."
 
 ## Guardrails
 
-- Follow the rac-core artifact schemas exactly. Run `rac validate` after every artifact creation.
+- Follow the asdecided-core artifact schemas exactly. Run `decided validate` after every artifact creation.
 - Keep acceptance criteria testable and specific. "User understands X" is not testable. "User can run `oc get inferenceservice` and see a READY status" is testable.
 - Do not skip decision artifacts — they capture tooling rationale and prevent re-litigation later.
 - Reference exemplar repos by path when documenting decisions.
-- Use the RHAIBU namespace prefix for all artifact IDs (handled by `rac new`).
+- Use the RHAIBU namespace prefix for all artifact IDs (handled by `decided new`).
 - Human ratification is mandatory — present drafts and confirm type, title, and relationships with the user before writing to disk.
 - Do not invent requirements the user did not express. Interview to fill gaps.
 

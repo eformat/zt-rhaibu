@@ -44,16 +44,7 @@ Check these before starting. If any are missing, print what's needed and stop.
 
 **Required tools:**
 - `git` — for initializing the RAC repo
-- Python 3.12+ — `python3 --version`
-- `rac` CLI — `source .venv/bin/activate && rac --version`
-
-If `rac` is not available, set it up:
-```bash
-cd "$(git rev-parse --show-toplevel)"
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
+- `decided` CLI — `decided --version` ([install](https://github.com/asdecided/core/releases))
 
 **Required inputs:**
 - Images provided by the user — file paths, a directory of screenshots, or inline images
@@ -78,8 +69,7 @@ Each workshop gets its own RAC repo at `~/git/zt-<slug>-rac/`. If it does not ex
 mkdir -p ~/git/zt-<slug>-rac/assets
 cd ~/git/zt-<slug>-rac
 git init
-source .venv/bin/activate
-rac init --key RHAIBU
+decided init --key RHAIBU
 ```
 
 Copy input images into `~/git/zt-<slug>-rac/assets/` so observations and source

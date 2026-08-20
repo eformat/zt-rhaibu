@@ -13,18 +13,17 @@ Each workshop follows the OODA loop. Run the skills in order -- and loop back wh
 | **Capture** | _manual_ | Record a demo video, `ffmpeg` split to keyframes |
 | **Observe** | `/workshop-observe` | Analyze screenshots, extract user flows, write observations to RAC repo |
 | **Orient** | `/workshop-orient` | Interview for requirements, create RAC artifacts (requirements, decisions, designs), validate |
-| **Do** | `/workshop-do` | Scaffold showroom content + automation infra repos, `make build`, `helm lint`, `rac validate` |
+| **Do** | `/workshop-do` | Scaffold showroom content + automation infra repos, `make build`, `helm lint`, `decided validate` |
 | **Act** | `/workshop-act` | Deploy to prelude cluster, ArgoCD sync, Playwright browser tests, fix-and-test loop |
 | **Loop Back** | _team review_ | Gaps? Re-Observe. Scope change? Re-Orient. Content fix? Re-Do. All green? Ship it. |
 
 ## Quick start
 
+Install [asdecided-core](https://github.com/asdecided/core/releases) and ensure `decided` is on your PATH.
+
 ```bash
 git clone <this-repo>
 cd zt-rhaibu
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
 ```
 
 Then open Claude Code and run:

@@ -51,16 +51,7 @@ Check these before starting. If any are missing, print what's needed and stop.
 - `git` — `git --version`
 - `node` / `npm` — `node --version && npm --version` (for Antora build)
 - `helm` — `helm version --short` (for chart validation)
-- Python 3.12+ — `python3 --version`
-- `rac` CLI — `source .venv/bin/activate && rac --version`
-
-If `rac` is not available, set it up:
-```bash
-cd "$(git rev-parse --show-toplevel)"
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
+- `decided` CLI — `decided --version` ([install](https://github.com/asdecided/core/releases))
 
 **Required exemplar repos** (clone if missing):
 - Content exemplar: `https://github.com/rhpds/ai-lightning-wordswarm-showroom`
@@ -264,9 +255,7 @@ Each workload chart follows:
 ### 7. Validate and report
 
 ```bash
-source .venv/bin/activate
-cd ~/git/zt-<slug>-rac
-rac validate .
+decided validate ~/git/zt-<slug>-rac/
 ```
 
 Confirm requirements still pass. Print a summary:
