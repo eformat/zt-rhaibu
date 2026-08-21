@@ -108,7 +108,7 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
     ```makefile
     PORT ?= 8887
     DOCS_DIR := $(shell pwd)
-    SITE_DIR := $(DOCS_DIR)/docs
+    SITE_DIR := $(DOCS_DIR)/www
 
     .PHONY: install build serve clean
 
@@ -127,9 +127,9 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
     clean:
     	rm -rf $(SITE_DIR)
     ```
-    Key rules: port 8887 (not 8080), call `npx antora` directly (not via `npm run`),
-    `rm -rf` the site dir before each build for a clean output, `python3 -m http.server`
-    for serve (no npm serve dependency), `.nojekyll` required for GitHub Pages.
+    Key rules: port 8887 (not 8080), output to `www/` (not `docs/`), call `npx antora`
+    directly (not via `npm run`), `rm -rf` before each build for clean output,
+    `python3 -m http.server` for serve, `.nojekyll` required for GitHub Pages.
 - `site.yml` — Antora playbook. MUST use the RHDP theme bundle — never the Antora
     default. Copy this block exactly:
     ```yaml
@@ -144,11 +144,15 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
     antora:
       extensions:
         - require: ./content/lib/inject-buttons.js
+    output:
+      dir: ./www
     ```
+    Output MUST be `./www` — the gh-pages workflow uploads `path: www`, and the
+    Makefile `SITE_DIR` must match.
 - `content/antora.yml` — component descriptor with all `{attribute}` defaults from
   the RAC parameter inventory
 - `content/modules/ROOT/nav.adoc` — navigation tree with entries for each module
-- `.gitignore` — exclude `node_modules/`, `docs/`, `.cache/`
+- `.gitignore` — exclude `node_modules/`, `www/`, `.cache/` (not `docs/` — output is `www/`)
 - `content/supplemental-ui/css/site-extra.css` — image shadow + send-to button styles
 - `content/supplemental-ui/js/buttons.js` — send-to-terminal JS
 - `content/supplemental-ui/img/favicon.svg` — Red Hat favicon
@@ -182,7 +186,13 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
 
 **Optional files** (add if the workshop needs interactive features):
 - `ui-config.yml` — showroom tabs and terminal configuration
-- `.github/workflows/gh-pages.yml` — GitHub Pages deployment
+
+**Always include** (copy from exemplar `gpu-resource-mgmt-showroom`):
+- `.github/workflows/gh-pages.yml` — GitHub Pages CI/CD. Triggers on pushes to
+  `content/**`, `site.yml`, or the workflow file itself. Builds with Antora (Node 22),
+  overrides the UI bundle to the `showroom-template` release for gh-pages rendering,
+  uploads `www/` as the pages artifact, and deploys on merge to `main`. PRs run the
+  build step only (no deploy). Copy verbatim — do not recreate.
 
 ### 4. Initialize content repo and test build
 
