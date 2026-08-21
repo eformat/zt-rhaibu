@@ -104,15 +104,61 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
 **Required files** (all must exist for `make build` to succeed):
 
 - `package.json` — Antora dependencies (`@antora/cli`, `@antora/site-generator`)
-- `Makefile` — build targets: install, build, serve, clean. The `build` target
-    must create `docs/.nojekyll` after the Antora build — GitHub Pages uses Jekyll
-    by default, which ignores directories starting with `_` (Antora puts all assets
-    in `_/`). Without `.nojekyll`, CSS/JS/fonts/images are invisible on GitHub Pages.
-- `site.yml` — Antora playbook pointing to `content/`, showroom UI bundle
+- `Makefile` — use this exact template (matches `zt-workbench-create-showroom`):
+    ```makefile
+    PORT ?= 8887
+    DOCS_DIR := $(shell pwd)
+    SITE_DIR := $(DOCS_DIR)/docs
+
+    .PHONY: install build serve clean
+
+    install:
+    	cd $(DOCS_DIR) && npm install
+
+    build: install
+    	rm -rf $(SITE_DIR)
+    	cd $(DOCS_DIR) && npx antora site.yml --stacktrace
+    	touch $(SITE_DIR)/.nojekyll
+
+    serve: build
+    	@echo "Serving at http://localhost:$(PORT)"
+    	python3 -m http.server $(PORT) --directory $(SITE_DIR)
+
+    clean:
+    	rm -rf $(SITE_DIR)
+    ```
+    Key rules: port 8887 (not 8080), call `npx antora` directly (not via `npm run`),
+    `rm -rf` the site dir before each build for a clean output, `python3 -m http.server`
+    for serve (no npm serve dependency), `.nojekyll` required for GitHub Pages.
+- `site.yml` — Antora playbook. MUST use the RHDP theme bundle — never the Antora
+    default. Copy this block exactly:
+    ```yaml
+    ui:
+      bundle:
+        url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/summit-2026/ui-bundle.zip
+        snapshot: true
+      supplemental_files: ./content/supplemental-ui
+    asciidoc:
+      attributes:
+        showroom-collection-version: v1.5.2
+    antora:
+      extensions:
+        - require: ./content/lib/inject-buttons.js
+    ```
 - `content/antora.yml` — component descriptor with all `{attribute}` defaults from
   the RAC parameter inventory
 - `content/modules/ROOT/nav.adoc` — navigation tree with entries for each module
 - `.gitignore` — exclude `node_modules/`, `docs/`, `.cache/`
+- `content/supplemental-ui/css/site-extra.css` — image shadow + send-to button styles
+- `content/supplemental-ui/js/buttons.js` — send-to-terminal JS
+- `content/supplemental-ui/img/favicon.svg` — Red Hat favicon
+- `content/supplemental-ui/partials/head-meta.hbs` — injects CSS + Font Awesome
+- `content/supplemental-ui/partials/head-icons.hbs` — favicon link
+- `content/lib/inject-buttons.js` — Antora extension (inlines CSS/JS per page)
+
+  **Copy** `content/supplemental-ui/` and `content/lib/` from an existing workshop
+  showroom (e.g., `~/git/zt-workbench-create-showroom/`) — do not recreate from
+  scratch and do not use a generic Antora UI bundle.
 
 **Content pages** under `content/modules/ROOT/pages/`:
 
@@ -136,8 +182,6 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
 
 **Optional files** (add if the workshop needs interactive features):
 - `ui-config.yml` — showroom tabs and terminal configuration
-- `content/supplemental-ui/` — custom CSS/JS overrides
-- `content/lib/inject-buttons.js` — Antora extension for inlining JS/CSS
 - `.github/workflows/gh-pages.yml` — GitHub Pages deployment
 
 ### 4. Initialize content repo and test build
