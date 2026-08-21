@@ -17,6 +17,12 @@ Each workshop follows the OODA loop. Run the skills in order -- and loop back wh
 | **Act** | `/workshop-act` | Deploy to prelude cluster, ArgoCD sync, Playwright browser tests, fix-and-test loop |
 | **Loop Back** | _team review_ | Gaps? Re-Observe. Scope change? Re-Orient. Content fix? Re-Do. All green? Ship it. |
 
+Standalone skills.
+
+| Phase | Skill | What happens |
+|-------|-------|-------------|
+| **Screenshot** | `/workshop-screenshot` | Capture live screenshots from cluster, embed `image::` refs in AsciiDoc, write RAC evidence |
+
 ## Quick start
 
 Install [asdecided-core](https://github.com/asdecided/core/releases) and ensure `decided` is on your PATH.
@@ -26,7 +32,7 @@ git clone <this-repo>
 cd zt-rhaibu
 ```
 
-Create screenshots from your demo video:
+Create screenshots from your demo video into keyframes:
 
 ```bash
 ffmpeg -i ~/Videos/zt-workbench-create.mkv \
@@ -54,12 +60,20 @@ This factory repo holds only skills and tooling -- no per-workshop state.
 
 ### Pipeline skills
 
+Main pipeline
+
 | Skill | Purpose |
 |-------|---------|
 | `workshop-observe` | Analyze demo screenshots into structured observations |
 | `workshop-orient` | Plan the workshop with RAC artifacts |
 | `workshop-do` | Scaffold content and infrastructure code |
 | `workshop-act` | Deploy, test, and validate on a cluster |
+
+Standalone skills
+
+| Skill | Purpose |
+|-------|---------|
+| `workshop-screenshot` | Capture live screenshots from a cluster and embed them into AsciiDoc content |
 
 ### Domain skills
 
