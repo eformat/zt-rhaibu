@@ -26,9 +26,17 @@ git clone <this-repo>
 cd zt-rhaibu
 ```
 
+Create screenshots from your demo video:
+
+```bash
+ffmpeg -i ~/Videos/zt-workbench-create.mkv \
+  -vf "thumbnail=120,setpts=N/TB" \
+  -vsync vfr rac/assets/keyframe-%03d.png
+```
+
 Then open Claude Code and run:
 
-```
+```bash
 /workshop-observe <path-to-screenshots>
 ```
 
