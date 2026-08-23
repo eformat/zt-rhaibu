@@ -150,7 +150,17 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
     Output MUST be `./www` — the gh-pages workflow uploads `path: www`, and the
     Makefile `SITE_DIR` must match.
 - `content/antora.yml` — component descriptor with all `{attribute}` defaults from
-  the RAC parameter inventory
+  the RAC parameter inventory. MUST include these three attributes or the RHDP theme
+  will not generate Prev/Next pagination:
+  ```yaml
+  asciidoc:
+    attributes:
+      source-highlighter: highlight.js
+      experimental: true
+      page-pagination: true
+  ```
+  Also MUST use `version: ~` (not a pinned version like `'1.0'`) — a versioned
+  component disables the theme's pagination nav.
 - `content/modules/ROOT/nav.adoc` — navigation tree with entries for each module
 - `.gitignore` — exclude `node_modules/`, `www/`, `.cache/` (not `docs/` — output is `www/`)
 - `content/supplemental-ui/css/site-extra.css` — image shadow + send-to button styles
