@@ -5,3 +5,4 @@
 zt_rhaibu.egg-info/
 .playwright-cli/
 screenshots/
+.rac/
