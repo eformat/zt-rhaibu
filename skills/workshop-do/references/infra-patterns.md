@@ -1,344 +1,144 @@
 # Infrastructure Patterns Reference
 
-Patterns extracted from the exemplar at `https://github.com/rhpds/ai-lightning-labs-automation`.
+The per-workshop infra repo (`zt-<slug>-automation`) deploys the showroom by referencing
+the reusable **`zt-showroom-deployer`** Helm chart. It is showroom-only: no ArgoCD,
+no app-of-apps, no operator/DataScienceCluster/tenant scaffolding. The chart source lives
+at `~/git/zt-showroom-deployer/` and is published to a Helm chart repo; the infra repo is a
+thin CLI wrapper (`values-<slug>.yaml` + `Makefile`) that runs `helm upgrade --install`.
 
-## 3-Layer Architecture
+## Showroom pod anatomy
 
-```
-bootstrap.yaml                    ← root entry point (apply this to start the cascade)
-cluster/infra/bootstrap/          → ArgoCD AppProjects + infra workloads
-cluster/platform/bootstrap/       → Platform workloads (created by infra)
-tenant/bootstrap/                 → Per-user tenant workloads
-```
+The chart renders a single `showroom` Deployment (`Recreate`, 1 replica) plus supporting
+objects. Knowing what the chart produces makes it clear what the values drive.
 
-## Root App-of-Apps Entry Point
+**Init containers**
+- `cluster-setup` *(optional — `showroom.clusterSetup.enabled`)*: `oc patch` on the default
+  IngressController to delete the `X-Frame-Options` and `Content-Security-Policy` response
+  headers so the showroom can be iframed. Needs the cluster-setup RBAC below.
+- `git-cloner`: clones `showroom.gitRepoUrl` @ `showroom.gitRepoRef` into a shared emptyDir.
+- `antora-builder`: builds the Antora site from the cloned content into the shared volume.
 
-A single ArgoCD Application at the repo root (`bootstrap.yaml`) that points to
-`cluster/infra/bootstrap/`. This is the only resource you `oc apply` — ArgoCD
-creates everything else from there.
+**Runtime containers**
+- `content` (:8000): serves the built showroom content.
+- `nginx` (:8080): reverse proxy. `location /` → content (:8000); `location ^~ /wetty` →
+  wetty (:8001) with websocket upgrade (`map $http_upgrade $connection_upgrade`).
+- `wetty` (:8001): in-browser SSH terminal, args templated from `showroom.wetty.*`
+  (`--base="/wetty/"`, `--port=8001`, `--allow-iframe=true`, `--ssh-host/-port/-user/-auth/-pass`).
 
-In the exemplar, the Ansible role `ocp4_workload_gitops_bootstrap` creates this
-Application dynamically with deployer values injected. We provide a static YAML
-with `REPLACE_ME` placeholders for standalone use:
+**Supporting objects**
+- `Namespace`, `ServiceAccount` (`showroom`).
+- RBAC (see below): cluster-setup `ClusterRole`/`ClusterRoleBinding` + namespace `edit` `RoleBinding`.
+- ConfigMaps: `showroom-proxy-config` (nginx.conf) and `showroom-userdata` (`user_data.yml`).
+- `Service` (ClusterIP :8080 → 8080) and `Route` (edge/Redirect, haproxy timeout + tunnel 1h).
 
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: bootstrap-infra
-  namespace: openshift-gitops
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/<org>/zt-<slug>-automation
-    targetRevision: main
-    path: cluster/infra/bootstrap
-    helm:
-      values: |
-        deployer:
-          domain: REPLACE_ME
-          apiUrl: REPLACE_ME
-  destination:
-    server: https://kubernetes.default.svc
-  syncPolicy:
-    automated:
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-```
+**Volumes**: `showroom-files` (emptyDir, shared repo/www), `user-data` (from
+`showroom-userdata` CM), `nginx-config` (from `showroom-proxy-config` CM), `nginx-pid`
+(emptyDir), `nginx-cache` (emptyDir).
 
-The cascade: `bootstrap.yaml` → infra bootstrap (AppProjects + workload Apps +
-platform App) → platform bootstrap (platform workload Apps) → individual workload
-charts. Tenant bootstrap is applied separately (per-user).
+## Chart value contract
 
-## YAML Anchor Pattern
-
-Every `values.yaml` defines anchors at the top for DRY git coordinates:
+`values.yaml` in `zt-showroom-deployer` (defaults are placeholders — override per workshop
+in `values-<slug>.yaml`):
 
 ```yaml
-default_settings: &git_defaults
-  repoURL: https://github.com/<org>/zt-<slug>-automation
-  targetRevision: main
+deployer:
+  domain: apps.cluster.example.com          # cluster apps wildcard domain
+  apiUrl: https://api.cluster.example.com:6443  # cluster API URL
+showroom:
+  namespace: showroom                        # target namespace for this showroom
+  gitRepoUrl: https://github.com/<org>/zt-<slug>-showroom  # content repo
+  gitRepoRef: main                           # branch/tag/sha to build
+  antoraPlaybook: site.yml                   # Antora playbook path in the content repo
+  ztBundle: https://github.com/rhpds/nookbag/releases/download/nookbag-v0.3.6/nookbag-v0.3.6.zip
+  ztUiEnabled: "true"                        # enable the nookbag (zt) UI bundle
+  guid: workshop                             # lab GUID surfaced in user_data.yml
+  user: user1                                # lab user
+  password: openshift                        # lab password
+  projectName: demo                          # project name shown to the learner
+  clusterSetup:
+    enabled: true                            # run the ingress-header-strip init container
+  rbac:
+    namespaceEdit: true                      # bind ClusterRole/edit to the SA in this ns
+  wetty:
+    sshHost: ssh.example.com                 # web-terminal SSH target host
+    sshPort: "22"                            # SSH port (often a nodePort)
+    sshUser: lab-user                        # SSH user
+    sshAuth: password                        # auth mode
+    sshPass: changeme                        # SSH password (SENSITIVE — see note)
+  images:
+    oseCli: registry.redhat.io/openshift4/ose-cli:latest
+    gitCloner: quay.io/rhpds/git-cloner:v1.1.5
+    antora: quay.io/rhpds/antora:v1.3.0
+    content: quay.io/rhpds/showroom-content:v1.4.2
+    nginx: quay.io/rhpds/nginx:1.25
+    wetty: quay.io/rhpds/wetty:v2.7.6
 ```
 
-Workloads merge anchors into their `git:` block:
+Per-key notes:
+- `deployer.domain` / `deployer.apiUrl` feed the `showroom-userdata` ConfigMap
+  (`login_command`, console/api/ingress/dashboard URLs).
+- `showroom.gitRepoUrl` / `gitRepoRef` drive the `git-cloner` init container — point at the
+  `zt-<slug>-showroom` repo created by workshop-do.
+- `showroom.clusterSetup.enabled` toggles both the `cluster-setup` init container and the
+  cluster-scoped RBAC that lets it patch the IngressController.
+- `showroom.rbac.namespaceEdit` toggles the `edit-showroom-sa` RoleBinding (matches the live
+  reference deployment).
+- `showroom.wetty.sshPass` is **sensitive** — the chart renders it as a container arg to
+  match the live reference. Hardening to a `Secret` is a future improvement, out of scope now.
 
-```yaml
-someWorkload:
-  enabled: false
-  git:
-    path: cluster/platform/some-workload
-    <<: *git_defaults
+### RBAC produced by the chart
+
+- Cluster-setup (gated by `showroom.clusterSetup.enabled`): a `ClusterRole` +
+  `ClusterRoleBinding` named `showroom-cluster-setup-<namespace>` (namespace-suffixed to
+  avoid collisions across multiple showroom deployments) granting `get`/`patch` on
+  `operator.openshift.io` `ingresscontrollers`.
+- Namespace edit (gated by `showroom.rbac.namespaceEdit`): a `RoleBinding` `edit-showroom-sa`
+  binding ClusterRole `edit` to the `showroom` ServiceAccount in the target namespace.
+
+## Per-workshop infra repo layout
+
+```
+zt-<slug>-automation/
+  README.md
+  Makefile              # helm repo add + helm upgrade --install ... -f values-<slug>.yaml
+  values-<slug>.yaml    # per-workshop overrides for the showroom-deployer chart
+  .gitignore            # *.tgz, charts/, rendered output
 ```
 
-## Workload Values Block
+### Example Makefile
 
-Every workload follows this structure:
+```makefile
+SLUG        ?= <slug>
+NAMESPACE   ?= showroom-$(SLUG)
+RELEASE     ?= showroom
+VALUES      ?= values-$(SLUG).yaml
+# Published chart ref; override CHART=~/git/zt-showroom-deployer for local source.
+CHART_REPO_NAME ?= eformat
+CHART_REPO  ?= https://eformat.github.io/helm-charts
+CHART       ?= $(CHART_REPO_NAME)/showroom-deployer
 
-```yaml
-workloadName:
-  enabled: true           # gate — template checks this
-  git:
-    path: relative/path   # path to workload chart
-    <<: *git_defaults     # merges repoURL + targetRevision
+.PHONY: repo template deploy status uninstall
+
+repo:
+	helm repo add $(CHART_REPO_NAME) $(CHART_REPO) || true
+	helm repo update $(CHART_REPO_NAME)
+
+template:
+	helm template $(RELEASE) $(CHART) -n $(NAMESPACE) -f $(VALUES)
+
+deploy:
+	helm upgrade --install $(RELEASE) $(CHART) \
+	  -n $(NAMESPACE) --create-namespace -f $(VALUES)
+
+status:
+	helm status $(RELEASE) -n $(NAMESPACE)
+
+uninstall:
+	helm uninstall $(RELEASE) -n $(NAMESPACE)
 ```
 
-Tenant workloads add a namespace:
-
-```yaml
-workloadName:
-  enabled: true
-  namespace: workload-{{ tenant_name }}
-  git:
-    path: tenant/workload-name
-    <<: *git_defaults
-```
-
-## Application Template — Simple (no value forwarding)
-
-Used for operator installs and self-contained charts:
-
-```yaml
-{{ "{{" }} if .Values.workloadName.enabled -{{ "}}" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: workload-name
-  namespace: openshift-gitops
-spec:
-  project: infra  # or platform
-  source:
-    repoURL: {{ "{{" }} .Values.workloadName.git.repoURL {{ "}}" }}
-    targetRevision: {{ "{{" }} .Values.workloadName.git.targetRevision {{ "}}" }}
-    path: {{ "{{" }} .Values.workloadName.git.path {{ "}}" }}
-  destination:
-    server: https://kubernetes.default.svc
-  syncPolicy:
-    automated:
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-{{ "{{" }}- end {{ "}}" }}
-```
-
-## Application Template — With Value Forwarding
-
-Used when child charts need deployer or config data:
-
-```yaml
-{{ "{{" }} if .Values.workloadName.enabled -{{ "}}" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: workload-name
-  namespace: openshift-gitops
-spec:
-  project: platform
-  source:
-    repoURL: {{ "{{" }} .Values.workloadName.git.repoURL {{ "}}" }}
-    targetRevision: {{ "{{" }} .Values.workloadName.git.targetRevision {{ "}}" }}
-    path: {{ "{{" }} .Values.workloadName.git.path {{ "}}" }}
-    helm:
-      values: |
-        deployer:
-        {{ "{{" }}- .Values.deployer | toYaml | nindent 10 {{ "}}" }}
-  destination:
-    server: https://kubernetes.default.svc
-  syncPolicy:
-    automated:
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-{{ "{{" }}- end {{ "}}" }}
-```
-
-## Cross-Layer Wiring (Infra → Platform)
-
-The infra bootstrap creates a `bootstrap-platform` Application that forwards
-`deployer` and all `platformValues` to the platform layer:
-
-```yaml
-{{ "{{" }} if .Values.platform.enabled -{{ "}}" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: bootstrap-platform
-  namespace: openshift-gitops
-spec:
-  project: infra
-  source:
-    repoURL: {{ "{{" }} .Values.platform.git.repoURL {{ "}}" }}
-    targetRevision: {{ "{{" }} .Values.platform.git.targetRevision {{ "}}" }}
-    path: cluster/platform/bootstrap
-    helm:
-      values: |
-        deployer:
-        {{ "{{" }}- .Values.deployer | toYaml | nindent 10 {{ "}}" }}
-        {{ "{{" }}- if .Values.platformValues {{ "}}" }}
-        {{ "{{" }}- .Values.platformValues | toYaml | nindent 8 {{ "}}" }}
-        {{ "{{" }}- end {{ "}}" }}
-  destination:
-    server: https://kubernetes.default.svc
-  syncPolicy:
-    automated:
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-{{ "{{" }}- end {{ "}}" }}
-```
-
-## Tenant Application Template
-
-Per-user naming with full value forwarding:
-
-```yaml
-{{ "{{" }} if .Values.workloadName.enabled -{{ "}}" }}
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: workload-{{ "{{" }} .Values.tenant.name {{ "}}" }}
-  namespace: openshift-gitops
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
-spec:
-  project: tenants
-  source:
-    repoURL: {{ "{{" }} .Values.workloadName.git.repoURL {{ "}}" }}
-    targetRevision: {{ "{{" }} .Values.workloadName.git.targetRevision {{ "}}" }}
-    path: {{ "{{" }} .Values.workloadName.git.path {{ "}}" }}
-    helm:
-      values: |
-        deployer:
-        {{ "{{" }}- .Values.deployer | toYaml | nindent 12 {{ "}}" }}
-        tenant:
-        {{ "{{" }}- .Values.tenant | toYaml | nindent 12 {{ "}}" }}
-        workloadName:
-        {{ "{{" }}- .Values.workloadName | toYaml | nindent 12 {{ "}}" }}
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: {{ "{{" }} .Values.workloadName.namespace {{ "}}" }}
-  syncPolicy:
-    automated:
-      enabled: true
-    syncOptions:
-      - CreateNamespace=true
-      - SkipDryRunOnMissingResource=true
-      - RespectIgnoreDifferences=true
-    retry:
-      limit: 10
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
-{{ "{{" }}- end {{ "}}" }}
-```
-
-## AppProject Template
-
-Created at sync-wave -30 (before Applications):
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: AppProject
-metadata:
-  annotations:
-    argocd.argoproj.io/sync-wave: "-30"
-  name: infra  # or platform, tenants
-  namespace: openshift-gitops
-spec:
-  description: Project description
-  sourceRepos:
-    - '*'
-  destinations:
-    - namespace: '*'
-      server: https://kubernetes.default.svc
-  clusterResourceWhitelist:
-    - group: '*'
-      kind: '*'
-  roles:
-    - name: admin
-      policies:
-        - p, proj:infra:admin, applications, *, infra/*, allow
-        - p, proj:infra:admin, applicationsets, *, infra/*, allow
-```
-
-## DataScienceCluster v2 API
-
-RHOAI 3.x requires `apiVersion: datasciencecluster.opendatahub.io/v2`. The v1 API
-is rejected by the admission webhook when v2-only components exist on the cluster.
-
-The v2 API adds components not present in v1: `aipipelines` (replaces
-`datasciencepipelines`), `trainer`, `mlflowoperator`, `feastoperator`,
-`llamastackoperator`. The v1 components `modelmeshserving` and `codeflare` are removed.
-
-All components must be listed in the template — set unused ones to `Removed`:
-
-```yaml
-apiVersion: datasciencecluster.opendatahub.io/v2
-kind: DataScienceCluster
-metadata:
-  name: default-dsc
-spec:
-  components:
-    dashboard:
-      managementState: Managed
-    workbenches:
-      managementState: Managed
-    aipipelines:
-      managementState: Removed
-    kserve:
-      managementState: Removed
-    modelregistry:
-      managementState: Removed
-    ray:
-      managementState: Removed
-    trustyai:
-      managementState: Removed
-    kueue:
-      managementState: Removed
-    trainingoperator:
-      managementState: Removed
-    trainer:
-      managementState: Removed
-    mlflowoperator:
-      managementState: Removed
-    feastoperator:
-      managementState: Removed
-    llamastackoperator:
-      managementState: Removed
-```
+`make template CHART=~/git/zt-showroom-deployer` renders against the local chart source with
+no cluster required — use it as the scaffold-time validation in workshop-do Step 7.
 
 ## Screenshot Manifest Integration
 
@@ -364,30 +164,3 @@ shots:
 When a manifest exists, `workshop-screenshot` uses it as the authoritative shot list
 instead of scanning AsciiDoc `image::` references. The showroom `values.yaml`
 `deployer.domain` and credential values are substituted into `{{ }}` placeholders.
-
-## Deployer Block
-
-Injected by the Ansible provisioning role. Provide placeholder defaults:
-
-```yaml
-deployer:
-  domain: apps.cluster.example.com
-  apiUrl: https://api.cluster.example.com:6443
-```
-
-## Provision Data ConfigMap
-
-Surfaces cluster data back to the provisioning platform:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: infra-cluster-provisiondata
-  namespace: openshift-gitops
-  labels:
-    demo.redhat.com/infra: "true"
-data:
-  provision_data: |
-    openshift_console_url: https://console-openshift-console.{{ "{{" }} .Values.deployer.domain {{ "}}" }}
-```

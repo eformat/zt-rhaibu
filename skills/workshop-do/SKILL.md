@@ -3,9 +3,9 @@ name: workshop-do
 description: >
   Scaffold workshop content and infrastructure code from RAC requirements. Produces
   two separate repos: (1) a zt-<slug>-showroom Antora/AsciiDoc content repo following
-  the ai-lightning-wordswarm-showroom pattern, and (2) a zt-<slug>-automation GitOps
-  infrastructure repo following the ai-lightning-labs-automation 3-layer ArgoCD
-  app-of-apps pattern. Use when someone wants to "scaffold a workshop", "generate
+  the ai-lightning-wordswarm-showroom pattern, and (2) a zt-<slug>-automation infra
+  repo that deploys the showroom by referencing the reusable zt-showroom-deployer Helm
+  chart (a thin values-<slug>.yaml + Makefile wrapper). Use when someone wants to "scaffold a workshop", "generate
   workshop code", "build workshop content", "create showroom content", "create workshop
   infrastructure", "implement the workshop", "write the workshop code", "antora
   scaffold", "showroom scaffold", "gitops workshop", "helm charts for workshop", or
@@ -38,8 +38,10 @@ Scaffold two codebases from RAC requirements: a content repo and an infrastructu
 - Use the **OpenShift 4.21 Expert** skill for OpenShift-specific lab steps.
 - Use the **OpenShift AI 3.3 Expert** skill for RHOAI-specific lab steps.
 - Reference `https://github.com/rhpds/ai-lightning-wordswarm-showroom` as the content exemplar.
-- Reference `https://github.com/rhpds/ai-lightning-labs-automation` as the infrastructure exemplar.
-- Infrastructure patterns are documented in `${CLAUDE_SKILL_DIR}/references/infra-patterns.md`.
+- The infrastructure repo is a thin **Helm CLI wrapper** around the reusable
+  `zt-showroom-deployer` chart (source at `~/git/zt-showroom-deployer/`). The chart value
+  contract, showroom pod anatomy, and wrapper layout are documented in
+  `${CLAUDE_SKILL_DIR}/references/infra-patterns.md`.
 - See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
   and quality rules.
 
@@ -58,10 +60,12 @@ Check these before starting. If any are missing, print what's needed and stop.
   ```bash
   git clone https://github.com/rhpds/ai-lightning-wordswarm-showroom.git https://github.com/rhpds/ai-lightning-wordswarm-showroom
   ```
-- Infrastructure exemplar: `https://github.com/rhpds/ai-lightning-labs-automation`
-  ```bash
-  git clone https://github.com/rhpds/ai-lightning-labs-automation.git https://github.com/rhpds/ai-lightning-labs-automation
-  ```
+
+**Required chart:**
+- The reusable `zt-showroom-deployer` Helm chart. The infra repo references it either from
+  a published Helm repo (the user's chart repo) or a local path fallback to
+  `~/git/zt-showroom-deployer/`. Have the published chart repo URL ready; if unknown, fall
+  back to the local path.
 
 **Required state:**
 - A workshop RAC repo at `~/git/zt-<slug>-rac/` (from workshop-orient) containing:
@@ -218,126 +222,99 @@ site builds but contains zero pages. If the build fails, fix errors and retry.
 
 ### 5. Scaffold the infrastructure repo
 
-Read `${CLAUDE_SKILL_DIR}/references/infra-patterns.md` for the exact template patterns.
+Read `${CLAUDE_SKILL_DIR}/references/infra-patterns.md` for the chart value contract and
+wrapper layout.
 
-Follow the `ai-lightning-labs-automation` 3-layer architecture:
+The infra repo is a **thin Helm CLI wrapper** around the published `zt-showroom-deployer`
+chart — no ArgoCD, no app-of-apps, no operator/DataScienceCluster/tenant layers. Scope is
+**showroom-only**: it deploys the showroom content pod onto an already-provisioned cluster.
 
 ```
 zt-<slug>-automation/
-  bootstrap.yaml                   ← root app-of-apps entry point
-  cluster/
-    infra/
-      bootstrap/
-        Chart.yaml
-        values.yaml
-        templates/
-          appproject-infra.yaml
-          appproject-platform.yaml
-          appproject-tenants.yaml
-          application-bootstrap-platform.yaml
-          configmap-cluster-provisiondata.yaml
-          application-<workload>.yaml  (one per infra workload)
-    platform/
-      bootstrap/
-        Chart.yaml
-        values.yaml
-        templates/
-          application-<workload>.yaml  (one per platform workload)
-      <workload>/                      (individual workload charts)
-        Chart.yaml
-        values.yaml
-        templates/
-  tenant/
-    bootstrap/
-      Chart.yaml
-      values.yaml
-      templates/
-        application-<workload>.yaml  (one per tenant workload)
-    <workload>/
-      Chart.yaml
-      values.yaml
-      templates/
+  README.md
+  Makefile              ← helm repo add + helm upgrade --install ... -f values-<slug>.yaml
+  values-<slug>.yaml    ← per-workshop values for the showroom-deployer chart
+  .gitignore
 ```
 
-**Key patterns to follow:**
+**`Makefile`** — targets driving `helm` against the chart. `CHART` selects the published
+repo (default) or a local path fallback to `~/git/zt-showroom-deployer`:
 
-1. **Root app-of-apps entry point** — create `bootstrap.yaml` at the repo root.
-   This is a single ArgoCD Application pointing to `cluster/infra/bootstrap/` with
-   `deployer.domain` and `deployer.apiUrl` as `REPLACE_ME` placeholders. Applying
-   this one file to the cluster kicks off the entire cascade:
-   ```
-   bootstrap.yaml → infra/bootstrap (AppProjects + workload Apps + platform App)
-                       → platform/bootstrap (platform workload Apps)
-                       → tenant/bootstrap (per-user Apps)
-   ```
-   In the exemplar, the Ansible role `ocp4_workload_gitops_bootstrap` creates this
-   entry-point dynamically. We provide a static YAML so it can be applied standalone.
+```makefile
+SLUG        ?= <slug>
+NAMESPACE   ?= showroom-$(SLUG)
+RELEASE     ?= showroom
+VALUES      ?= values-$(SLUG).yaml
+# Published chart ref; override CHART=~/git/zt-showroom-deployer for local source.
+CHART_REPO_NAME ?= eformat
+CHART_REPO  ?= https://eformat.github.io/helm-charts
+CHART       ?= $(CHART_REPO_NAME)/showroom-deployer
 
-2. **YAML anchors** at the top of every `values.yaml`:
-   ```yaml
-   default_settings: &git_defaults
-     repoURL: https://github.com/<org>/zt-<slug>-automation
-     targetRevision: main
-   ```
+.PHONY: repo template deploy status uninstall
 
-3. **Workload blocks** — each with `enabled: true/false` and `git:` using `<<: *git_defaults`
+repo:
+	helm repo add $(CHART_REPO_NAME) $(CHART_REPO) || true
+	helm repo update $(CHART_REPO_NAME)
 
-4. **Application templates** — gated by `{{ if .Values.<key>.enabled }}`, with standard
-   syncPolicy (automated, CreateNamespace, retry 10/5s/2x/3m)
+template:
+	helm template $(RELEASE) $(CHART) -n $(NAMESPACE) -f $(VALUES)
 
-5. **Cross-layer wiring** — infra creates `bootstrap-platform` Application that forwards
-   `deployer` and `platformValues` via `helm.values` with `toYaml | nindent`
+deploy:
+	helm upgrade --install $(RELEASE) $(CHART) \
+	  -n $(NAMESPACE) --create-namespace -f $(VALUES)
 
-6. **Tenant templates** — append `{{ .Values.tenant.name }}` to Application names,
-   forward `deployer`, `tenant`, and workload-specific values
+status:
+	helm status $(RELEASE) -n $(NAMESPACE)
 
-### 6. Create workshop-specific workload charts
-
-Based on infrastructure requirements from RAC:
-
-- **Operator subscriptions** (infra layer): e.g., RHOAI operator, GPU operator.
-  Each is a minimal chart with a Subscription CR template.
-- **Platform configurations** (platform layer): e.g., DataScienceCluster CR,
-  ServingRuntime CRs, InferenceService templates, namespace setup.
-  **Important:** DataScienceCluster CRs MUST use `apiVersion: datasciencecluster.opendatahub.io/v2`.
-  The v1 API is rejected when v2-only components (mlflowoperator, trainer, etc.) exist.
-  Include all v2 components in the template (dashboard, workbenches, aipipelines,
-  kserve, modelregistry, ray, trustyai, kueue, trainingoperator, trainer,
-  mlflowoperator, feastoperator, llamastackoperator) — set unused ones to `Removed`.
-- **Tenant resources** (tenant layer): e.g., per-user namespaces, workbenches,
-  RBAC bindings, secrets.
-
-Each workload chart follows:
+uninstall:
+	helm uninstall $(RELEASE) -n $(NAMESPACE)
 ```
-<workload-name>/
-  Chart.yaml        # name, version, description
-  values.yaml       # defaults (deployer block, workload-specific)
-  templates/
-    <resource>.yaml  # one template per K8s resource
-```
+
+**`.gitignore`** — exclude `*.tgz`, `charts/`, and any rendered output.
+
+### 6. Populate values-<slug>.yaml
+
+Fill the per-workshop values for the `zt-showroom-deployer` chart. Everything not set here
+inherits the chart defaults. Set at least:
+
+- `showroom.gitRepoUrl` — the GitHub URL of the `zt-<slug>-showroom` content repo created in
+  Step 3/4 (and `showroom.gitRepoRef`, usually `main`).
+- `deployer.domain` / `deployer.apiUrl` — the target cluster's apps domain and API URL.
+- `showroom.namespace` — target namespace (matches the Makefile `NAMESPACE`).
+- `showroom.guid` / `showroom.user` / `showroom.password` / `showroom.projectName` — lab identity.
+- `showroom.wetty.sshHost` / `sshPort` / `sshUser` / `sshAuth` / `sshPass` — web terminal SSH
+  coordinates (these are cluster/environment-specific; leave placeholders if unknown at
+  scaffold time and fill during workshop-act).
+- `showroom.images.*` and `showroom.ztBundle` — pin the runtime image and bundle versions.
+
+Do **not** hardcode cluster values in the chart — they live only in `values-<slug>.yaml`.
 
 ### 7. Validate and report
 
 ```bash
 decided validate ~/git/zt-<slug>-rac/
+
+# Render the infra wrapper against the chart (no cluster needed):
+cd ~/git/zt-<slug>-automation && make template CHART=~/git/zt-showroom-deployer
 ```
 
-Confirm requirements still pass. Print a summary:
+Confirm requirements still pass and the chart renders cleanly. Print a summary:
 - Files created in content repo (count by type: .adoc, .yaml, .json, .yml)
-- Files created in infra repo (count by layer)
+- Files created in infra repo (`Makefile`, `values-<slug>.yaml`, `README.md`, `.gitignore`)
 - Content build status (pass/fail)
-- Helm chart validation (run `helm lint` on each chart)
+- `helm template` render status against `zt-showroom-deployer` (pass/fail)
 
 Prompt: "Workshop scaffolded. Run `/workshop-act` to deploy and test on the prelude cluster."
 
 ## Guardrails
 
 - Never hardcode cluster-specific values in content. Use `{attribute}` substitution.
-- Never hardcode cluster-specific values in infra. Use `deployer.*` and helm values.
+- Never hardcode cluster-specific values in infra. They live only in `values-<slug>.yaml`,
+  fed to the `zt-showroom-deployer` chart.
 - Follow the `openshift-workshop-builder` patterns exactly for content structure.
-- Follow the `ai-lightning-labs-automation` patterns exactly for infrastructure.
+- Keep the infra repo a thin Helm wrapper — do not re-scaffold operators, DataScienceCluster,
+  tenant layers, or an ArgoCD app-of-apps. The chart owns what gets deployed.
 - Every command in a module must use `[source,role="execute"]` blocks.
-- Keep Helm charts minimal — one chart per logical workload.
 - Initialize git before running `make build` — Antora requires at least one commit.
 - Do not create screenshots — that requires a running cluster and is deferred to
   `workshop-act`.
