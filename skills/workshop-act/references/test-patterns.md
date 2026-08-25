@@ -38,44 +38,47 @@ playwright-cli state-save ocp-session
 playwright-cli state-load ocp-session
 ```
 
-## ArgoCD Health Check Patterns
+## Showroom Deploy Health Check Patterns
 
-### Wait for All Applications to Sync
+The showroom is deployed by the `zt-showroom-deployer` Helm chart via the automation repo's
+`make deploy` (helm upgrade --install). Health = the Helm release deployed, the Deployment
+rolled out, and the Route serving content.
 
-```bash
-TIMEOUT=900  # 15 minutes
-INTERVAL=30
-ELAPSED=0
-while [ $ELAPSED -lt $TIMEOUT ]; do
-  UNSYNCED=$(oc get application -n openshift-gitops --no-headers 2>/dev/null \
-    | grep -v "Synced.*Healthy" | wc -l)
-  if [ "$UNSYNCED" -eq 0 ]; then
-    echo "All applications synced"
-    break
-  fi
-  echo "Waiting... $UNSYNCED applications not ready ($ELAPSED/$TIMEOUT s)"
-  sleep $INTERVAL
-  ELAPSED=$((ELAPSED + INTERVAL))
-done
-```
-
-### Check Specific Application
+### Check the Helm release
 
 ```bash
-oc get application <name> -n openshift-gitops \
-  -o jsonpath='{.status.sync.status}/{.status.health.status}'
-# Expected: Synced/Healthy
+helm status showroom -n showroom-<slug>
+# Expected: STATUS: deployed
 ```
 
-### Force Sync an Application
+### Wait for the showroom rollout
 
 ```bash
-oc patch application <name> -n openshift-gitops \
-  -p '{"operation":{"initiatedBy":{"automated":true},"sync":{}}}' \
-  --type merge
+oc rollout status deploy/showroom -n showroom-<slug> --timeout=10m
+oc get pods -n showroom-<slug>
+# Expected: the showroom pod Running with all containers ready
+# (init: cluster-setup, git-cloner, antora-builder; runtime: content, nginx, wetty)
 ```
 
-## Operator Verification
+### Check the Route serves content
+
+```bash
+ROUTE=$(oc get route -n showroom-<slug> -o jsonpath='{.items[0].spec.host}')
+curl -sk -o /dev/null -w '%{http_code}\n' https://$ROUTE/
+# Expected: 200
+```
+
+### Inspect init-container build logs (when content fails to render)
+
+```bash
+oc logs deploy/showroom -n showroom-<slug> -c git-cloner
+oc logs deploy/showroom -n showroom-<slug> -c antora-builder
+```
+
+## Operator Verification (only if the workshop content requires it)
+
+> The showroom deploy does not install operators. Run these only when a workshop's *content*
+> assumes RHOAI/KServe/etc. already exist on the cluster.
 
 ### Check CSV Status
 

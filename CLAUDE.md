@@ -24,7 +24,7 @@ This factory repo (`zt-rhaibu`) holds only skills and tooling — no per-worksho
 ## Exemplar Repos
 
 - **Content**: https://github.com/rhpds/ai-lightning-wordswarm-showroom — Antora/AsciiDoc showroom pattern
-- **Infra**: https://github.com/rhpds/ai-lightning-labs-automation — 3-layer ArgoCD app-of-apps with Helm
+- **Infra**: `zt-showroom-deployer` Helm chart (source at `~/git/zt-showroom-deployer/`, published as `eformat/showroom-deployer` at https://eformat.github.io/helm-charts) — the per-workshop `zt-<slug>-automation` repo is a thin `values-<slug>.yaml` + `Makefile` wrapper around it (no ArgoCD app-of-apps)
 
 ## Skill Coordination
 

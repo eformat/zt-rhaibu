@@ -32,9 +32,12 @@ contract between planning and implementation.
 
 ## Skill coordination
 
-- Follow `rac-capture` patterns for artifact creation — interview the user, confirm before writing.
-- Follow `rac-review` patterns for validation — work findings worst-first until all pass.
-- Use `rac schema <type>` to get real artifact schemas. Never invent fields or sections.
+- Follow the **`decided-capture`** skill's approach for artifact creation — interview the
+  user and propose, the human ratifies, `decided validate` closes.
+- Follow the **`decided-review`** skill's approach for validation — work findings
+  worst-first until validation and relationship checks pass. (`decided-artifacts` covers
+  authoring/linking conventions.)
+- Use `decided schema <type>` to get real artifact schemas. Never invent fields or sections.
 - See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
   and quality rules.
 
@@ -45,6 +48,11 @@ Check these before starting. If any are missing, print what's needed and stop.
 **Required tools:**
 - `git` — for RAC repo management
 - `decided` CLI — `decided --version` ([install](https://github.com/asdecided/core/releases))
+
+**Optional helper skills:** `decided-capture` / `decided-review` / `decided-artifacts` live
+in asdecided-core (`~/git/asdecided-core/.claude/skills/`). They're convenience wrappers over
+the same `decided` CLI — this workflow works with just the `decided` CLI on PATH if they
+aren't loaded.
 
 **Required state:**
 - A workshop RAC repo at `~/git/zt-<slug>-rac/` with `.decided/config.yaml`
@@ -169,7 +177,11 @@ decided new decision decisions/<topic-slug>.md
 
 At minimum, create decisions for:
 - **Content format** — Antora/AsciiDoc showroom (status: decided). Reference the exemplar at `https://github.com/rhpds/ai-lightning-wordswarm-showroom`.
-- **Infrastructure approach** — 3-layer ArgoCD app-of-apps GitOps (status: decided). Reference the exemplar at `https://github.com/rhpds/ai-lightning-labs-automation`.
+- **Infrastructure approach** — deploy the showroom via the reusable `zt-showroom-deployer`
+  Helm chart, wrapped per-workshop by a thin `values-<slug>.yaml` + `Makefile` in
+  `zt-<slug>-automation` (status: decided). Showroom-only — no ArgoCD app-of-apps or
+  operator/tenant layers. Chart source: `~/git/zt-showroom-deployer/` (published as
+  `eformat/showroom-deployer`).
 
 Add additional decisions only when the workshop requires them (e.g., model serving,
 authentication, GPU allocation). Not every workshop needs all decision types.
@@ -188,7 +200,10 @@ decided new design designs/<workshop-slug>-architecture.md
 Document:
 - **Module flow** — which modules depend on which (ordered list or diagram)
 - **Content repo structure** — mapping to the showroom exemplar (site.yml, antora.yml, pages)
-- **Infrastructure requirements** — operators, GPUs, storage, namespaces, custom resources
+- **Infrastructure requirements** — the showroom-deployer chart values (namespace, git repo,
+  domain/apiUrl, wetty), plus any cluster-side resources the *content* assumes already exist
+  (e.g. RHOAI operator, GPUs, storage) — the workshop infra deploys only the showroom, not
+  those operators
 - **Parameter inventory** — all `{attribute}` values needed in `content/antora.yml`:
   - `lab_name`, `user`, `password`, `guid`
   - `openshift_api_url`, `openshift_console_url`, `openshift_cluster_ingress_domain`

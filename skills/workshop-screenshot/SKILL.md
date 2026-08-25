@@ -39,7 +39,7 @@ requirements to determine what to capture rather than relying on a static list.
   to find existing `image::` references and surrounding context.
 - Use **openshift-4-21-expert** for OpenShift console navigation patterns.
 - Use **openshift-ai-3-3-expert** for RHOAI dashboard navigation patterns.
-- After embedding screenshots, recommend running **showroom:verify-content** to
+- After embedding screenshots, recommend running **verify-content** to
   validate the updated content against Red Hat quality standards.
 - See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
   and quality rules.
@@ -306,4 +306,4 @@ playwright-cli -s=workshop-screenshots close
 
 - `/workshop-act` — Deploy and test the workshop end-to-end
 - `/workshop-do` — Scaffold content and infrastructure from RAC requirements
-- `/showroom:verify-content` — Validate content against Red Hat quality standards
+- `/verify-content` — Validate content against Red Hat quality standards

@@ -332,4 +332,4 @@ Prompt: "Workshop scaffolded. Run `/workshop-act` to deploy and test on the prel
 - `/workshop-act` — Deploy and test the workshop end-to-end
 - `/workshop-screenshot` — Capture and embed screenshots into content
 - `/openshift-workshop-builder` — AsciiDoc/Antora scaffolding patterns
-- `/showroom:verify-content` — Validate content against Red Hat quality standards
+- `/verify-content` — Validate content against Red Hat quality standards

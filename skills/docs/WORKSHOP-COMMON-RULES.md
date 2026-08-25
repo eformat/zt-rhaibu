@@ -145,11 +145,11 @@ Workshop artifacts live in the RAC repo at `~/git/zt-<slug>-rac/`.
 
 ## 5. Quality Gate (REQUIRED)
 
-Before declaring content ready, run `showroom:verify-content` if the RHDP skills
-marketplace plugin is installed.
+Before declaring content ready, run the `verify-content` skill (vendored in this repo
+under `skills/verify-content/`).
 
 ```
-/showroom:verify-content
+/verify-content
 ```
 
 This launches parallel agents per module, checking against Red Hat quality standards:
@@ -163,8 +163,6 @@ This launches parallel agents per module, checking against Red Hat quality stand
 - **Warning** — report but do not block
 - **Info** / **Recommendation** — optional improvement
 
-If the plugin is not installed, skip this step and note it in the validation report.
-
 ---
 
 ## 6. Related Skills Convention (REQUIRED)
@@ -176,7 +174,7 @@ Every SKILL.md ends with a `## Related Skills` section listing connected skills:
 
 - `/workshop-orient` — Plan the workshop from observations
 - `/workshop-do` — Scaffold content and infrastructure
-- `/showroom:verify-content` — Validate content against Red Hat standards
+- `/verify-content` — Validate content against Red Hat standards
 ```
 
 ---
