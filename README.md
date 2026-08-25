@@ -14,7 +14,7 @@ Each workshop follows the OODA loop. Run the skills in order -- and loop back wh
 | **Observe** | `/workshop-observe` | Analyze screenshots, extract user flows, write observations to RAC repo |
 | **Orient** | `/workshop-orient` | Interview for requirements, create RAC artifacts (requirements, decisions, designs), validate |
 | **Do** | `/workshop-do` | Scaffold showroom content + automation infra repos, `make build`, `helm lint`, `decided validate` |
-| **Act** | `/workshop-act` | Deploy to prelude cluster, ArgoCD sync, Playwright browser tests, fix-and-test loop |
+| **Act** | `/workshop-act` | Deploy to prelude cluster (`helm upgrade --install`), Playwright browser tests, fix-and-test loop |
 | **Loop Back** | _team review_ | Gaps? Re-Observe. Scope change? Re-Orient. Content fix? Re-Do. All green? Ship it. |
 
 Standalone skills.
@@ -32,7 +32,9 @@ git clone <this-repo>
 cd zt-rhaibu
 ```
 
-Create screenshots from your demo video into keyframes:
+Record your demo video e.g. `zt-workbench-create.mkv`
+
+Create screenshots from your demo video as keyframes:
 
 ```bash
 ffmpeg -i ~/Videos/zt-workbench-create.mkv \
@@ -46,17 +48,23 @@ Then open Claude Code and run:
 /workshop-observe <path-to-screenshots>
 ```
 
+The skills will guide you through each of the other skills. Each skill will stop for human in the loop check-fix and ask questions as needed.
+
 ## Three repos per workshop
+
+3 repos are generated once you have been through the OODA loop.
 
 ```
 ~/git/zt-<slug>-rac/          # planning (Requirements As Code)
 ~/git/zt-<slug>-showroom/     # content (Antora/AsciiDoc)
-~/git/zt-<slug>-automation/   # infrastructure (ArgoCD app-of-apps)
+~/git/zt-<slug>-automation/   # infrastructure (thin Helm wrapper: values-<slug>.yaml + Makefile)
 ```
 
 This factory repo holds only skills and tooling -- no per-workshop state.
 
 ## Skills
+
+Here are descriptions of the skills.
 
 ### Pipeline skills
 
@@ -83,6 +91,12 @@ Standalone skills
 | `openshift-4-21-expert` | OpenShift console flows and cluster admin |
 | `openshift-ai-3-3-expert` | RHOAI workbenches, model serving, pipelines |
 | `playwright-cli` | Browser automation for testing |
+| `/verify-content` | Validate showroom content against Red Hat quality standards (vendored from RHDP marketplace) |
+| `/catalog-builder` | Build an RHDP AgnosticV catalog entry when ready to publish (vendored from RHDP marketplace) |
+
+`verify-content` and `catalog-builder` are vendored into this repo and registered as
+slash commands (`/verify-content`, `/catalog-builder`); the other domain skills are
+reference-only patterns invoked by the pipeline skills.
 
 ## Diagram source
 

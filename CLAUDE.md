@@ -32,6 +32,8 @@ This factory repo (`zt-rhaibu`) holds only skills and tooling — no per-worksho
 - **playwright-cli** — browser automation for testing (called by workshop-act)
 - **openshift-4-21-expert** — OpenShift console flows and cluster admin steps
 - **openshift-ai-3-3-expert** — RHOAI workbenches, model serving, pipelines
+- **verify-content** (`/verify-content`) — validates showroom content against Red Hat quality standards; quality gate in workshop-act. Vendored from the RHDP skills marketplace and registered as a slash command.
+- **catalog-builder** (`/catalog-builder`) — builds an RHDP AgnosticV catalog entry at publish time. Vendored from the RHDP skills marketplace and registered as a slash command.
 
 ## RAC
 
