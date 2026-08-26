@@ -1,18 +1,19 @@
 ---
 name: workshop-act
 description: >
-  Deploy a scaffolded workshop to a prelude OpenShift cluster and validate it end-to-end.
+  Deploy a scaffolded workshop to a prelude OpenShift cluster, validate it end-to-end,
+  then publish the validated content to p-zero-lessons.
   Deploys the showroom via its Helm wrapper (helm upgrade --install), builds and serves
-  Antora content, runs browser-based tests using playwright-cli, and validates each RAC
-  requirement's acceptance criteria.
+  Antora content, runs browser-based tests using playwright-cli, validates each RAC
+  requirement's acceptance criteria, and opens a PR into red-hat-ai-dev/p-zero-lessons.
   Implements a fix-and-test loop: any failed test or unmet requirement triggers another
   iteration until all checks pass. Use when someone wants to "deploy the workshop",
   "test the workshop", "validate workshop requirements", "run workshop on prelude",
   "workshop smoke test", "check workshop quality", "workshop CI loop", "verify the
   workshop works", "deploy to prelude", "test on cluster", "workshop acceptance testing",
-  or "workshop fix loop". This is the fourth step of the OODA workshop pipeline
-  (Observe -> Orient -> Do -> Act). Do NOT use for planning (workshop-orient) or
-  scaffolding code (workshop-do).
+  "workshop fix loop", "publish workshop", or "PR to p-zero-lessons". This is the fourth
+  and final step of the OODA workshop pipeline (Observe -> Orient -> Do -> Act -> Publish).
+  Do NOT use for planning (workshop-orient) or scaffolding code (workshop-do).
 triggers:
   keywords:
     - "workshop act"
@@ -277,6 +278,122 @@ If some failed after max iterations:
 "Workshop validation incomplete after 5 iterations. The above requirements need attention."
 
 Prompt the user to commit updated screenshots and any content fixes.
+
+### 8. Publish to p-zero-lessons
+
+Once all requirements pass (or after human sign-off if some needed manual review),
+contribute the validated content to the central lessons repo.
+
+**Target repo:** `https://github.com/red-hat-ai-dev/p-zero-lessons`
+**Repo structure:**
+```
+p-zero-lessons/
+  antora-playbook.yml          ← registers all lesson components; update this
+  home/                        ← hub landing page; update nav.adoc and index.adoc
+    antora.yml
+    modules/ROOT/
+      nav.adoc                 ← add an xref entry for the new lesson
+      pages/index.adoc         ← add a row to the lessons table
+  supplemental-ui/             ← shared UI assets (do not modify)
+  lib/inject-buttons.js        ← shared Antora extension (do not modify)
+  lessons/
+    <slug>/                    ← lesson content goes here
+      content/
+        antora.yml             ← MUST have name: <slug> (not "modules")
+        ...
+```
+
+**GitHub Pages:** merging to `main` auto-triggers the Actions workflow
+(`.github/workflows/gh-pages.yml`) which builds with `antora-playbook.yml`
+and deploys to `https://red-hat-ai-dev.github.io/p-zero-lessons/`.
+
+#### Step-by-step
+
+**1. Clone or update the lessons repo:**
+
+```bash
+LESSONS_DIR=~/git/p-zero-lessons
+if [ -d "$LESSONS_DIR" ]; then
+  git -C "$LESSONS_DIR" fetch origin && git -C "$LESSONS_DIR" checkout main && git -C "$LESSONS_DIR" pull
+else
+  git clone https://github.com/red-hat-ai-dev/p-zero-lessons.git "$LESSONS_DIR"
+fi
+git -C "$LESSONS_DIR" checkout -b workshop/<slug>
+```
+
+**2. Copy lesson content (exclude build artifacts and git history):**
+
+```bash
+rsync -av --delete \
+  ~/git/zt-<slug>-showroom/ \
+  "$LESSONS_DIR/lessons/<slug>/" \
+  --exclude='.git' \
+  --exclude='node_modules' \
+  --exclude='.cache' \
+  --exclude='www'
+```
+
+**3. Fix the Antora component name** — the showroom scaffold uses `name: modules`
+by default but p-zero-lessons needs each lesson's component name to match its slug
+so cross-component xrefs work:
+
+```bash
+# In lessons/<slug>/content/antora.yml, set:  name: <slug>
+sed -i '' "s/^name: modules/name: <slug>/" "$LESSONS_DIR/lessons/<slug>/content/antora.yml"
+```
+
+Verify the change: `grep '^name:' "$LESSONS_DIR/lessons/<slug>/content/antora.yml"`
+
+**4. Register the lesson in `antora-playbook.yml`** — add a new content source entry:
+
+```yaml
+content:
+  sources:
+    - url: .
+      start_path: home
+    # existing lessons...
+    - url: .
+      start_path: lessons/<slug>/content   # ← add this line
+```
+
+**5. Update the hub landing page** so the lesson appears in the sidebar and table:
+
+In `home/modules/ROOT/nav.adoc`, add under `.Lessons`:
+```asciidoc
+* xref:<slug>::index.adoc[<Workshop Title>]
+```
+
+In `home/modules/ROOT/pages/index.adoc`, add a row to the lessons table:
+```asciidoc
+| xref:<slug>::index.adoc[<Workshop Title>]
+| <one-line description>
+| <estimated time>
+```
+
+**6. Update the site URL in the lesson's `site.yml`:**
+
+```bash
+sed -i '' "s|url:.*zt-<slug>-showroom|url: https://red-hat-ai-dev.github.io/p-zero-lessons/<slug>|" \
+  "$LESSONS_DIR/lessons/<slug>/site.yml"
+```
+
+**7. Commit and open a PR:**
+
+```bash
+git -C "$LESSONS_DIR" add lessons/<slug>/ antora-playbook.yml \
+  home/modules/ROOT/nav.adoc home/modules/ROOT/pages/index.adoc
+git -C "$LESSONS_DIR" commit -m "Add <slug> workshop lesson"
+git -C "$LESSONS_DIR" push -u origin workshop/<slug>
+gh pr create \
+  --repo red-hat-ai-dev/p-zero-lessons \
+  --base main \
+  --head workshop/<slug> \
+  --title "Add <slug> workshop" \
+  --body "Validated workshop from zt-<slug>-showroom. All RAC acceptance criteria passed."
+```
+
+Print the PR URL and stop. Human review and merge is the final gate — the GitHub
+Actions workflow deploys automatically on merge to `main`.
 
 ## Guardrails
 

@@ -5,8 +5,8 @@ Workshop creation pipeline based on the OODA loop. Each phase is a skill in `ski
 ## Pipeline
 
 ```
-Observe → Orient → Do → Act
-(images)   (RAC)   (code)  (deploy+test)
+Observe → Orient → Do → Act → Publish
+(images)   (RAC)   (code)  (deploy+test)  (PR to p-zero-lessons)
 ```
 
 **Each workshop gets its own RAC repo** at `~/git/zt-<slug>-rac/` — the planning contract between phases.
@@ -17,9 +17,30 @@ Observe → Orient → Do → Act
 | Orient | `workshop-orient` | Observation doc or freeform | `~/git/zt-<slug>-rac/requirements/`, `decisions/`, `designs/` |
 | Do | `workshop-do` | RAC artifacts | `~/git/zt-<slug>-showroom/` + `~/git/zt-<slug>-automation/` |
 | Act | `workshop-act` | Scaffolded repos + RAC requirements | Deployed workshop on prelude cluster |
+| Publish | `workshop-act` (step 8) | Validated showroom content | PR into `p-zero-lessons/lessons/<slug>/` |
 
-Three repos per workshop: `zt-<slug>-rac/`, `zt-<slug>-showroom/`, `zt-<slug>-automation/`.
-This factory repo (`zt-rhaibu`) holds only skills and tooling — no per-workshop state.
+Two working repos per workshop: `zt-<slug>-rac/` and `zt-<slug>-showroom/`.
+Finished content is contributed to **`https://github.com/red-hat-ai-dev/p-zero-lessons`** as `lessons/<slug>/`.
+The `zt-<slug>-automation/` deploy repo is used during Act for cluster testing only — it is not the publish target.
+
+### p-zero-lessons repo structure
+
+```
+p-zero-lessons/
+  antora-playbook.yml   ← global build; add a content source per lesson
+  home/                 ← hub landing page (nav.adoc + index.adoc); update per lesson
+  supplemental-ui/      ← shared RHDP theme assets
+  lib/inject-buttons.js ← shared Antora extension
+  lessons/<slug>/       ← one directory per workshop
+    content/
+      antora.yml        ← name: <slug>  (NOT "modules")
+      ...
+```
+
+Merging to `main` auto-triggers `.github/workflows/gh-pages.yml` → deploys to
+`https://red-hat-ai-dev.github.io/p-zero-lessons/`. Each lesson is a named Antora
+component; the hub `home` component links them all in the sidebar.
+This factory repo (`zt-rhaibu`) holds only skills and tooling — no per-workshop state. Pipeline changes are developed in branches of this repo.
 
 ## Exemplar Repos
 
