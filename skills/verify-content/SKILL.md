@@ -245,6 +245,42 @@ When E.3a is selected:
 
 ---
 
+## Prose Style Checks (P.1–P.4)
+
+These checks are performed by each `module-reviewer` agent. They detect violations of the
+prose style rules defined in `skills/openshift-workshop-builder/references/prose-style.md`
+and enforced by `WORKSHOP-COMMON-RULES.md` Section 8.
+
+| ID | Check | Fail condition | Severity |
+|---|---|---|---|
+| P.1 | Module summary uses bold-label format | `== Module summary` missing, or missing any of `**What you accomplished:**` / `**Key takeaways:**` / `**Next steps:**` bold labels, or any section has fewer than 3 bullets | Warning |
+| P.2 | Exercise transitions present | Consecutive `== Exercise N` headings with no bridging sentence between the end of one and the start of the next (i.e., the content between `=== Verify` closing and the next `== Exercise` heading is blank or only whitespace) | Warning |
+| P.3 | Workaround preceded by NOTE/WARNING | Any known workaround cue ("workaround", "known issue", "This is expected", "run twice", "second apply") that is NOT preceded by a NOTE or WARNING admonition within 5 lines | Warning |
+| P.4 | Admonition type matches intent | `TIP` used where content describes non-determinism/expected friction (should be NOTE); `NOTE` used for destructive operations (should be WARNING) | Info |
+
+**module-reviewer detection guidance:**
+
+- **P.1**: Parse for `== Module summary` heading. Then check for `**What you accomplished:**`,
+  `**Key takeaways:**`, and `**Next steps:**` strings. Count bullets (`* `) in each section.
+  Flag if any label is missing or bullet count < 3. Skip check on conclusion pages.
+
+- **P.2**: Find all `== Exercise` headings in order. For each adjacent pair, extract the
+  content between the first exercise's last `=== Verify` block and the next `== Exercise`
+  heading. If it is empty or whitespace-only, flag P.2.
+
+- **P.3**: Search for workaround markers (case-insensitive): "workaround", "known issue",
+  "This is expected", "run twice", "run again", "apply again", "second apply",
+  "CLI-vs-UI gap". For each match, check the 5 preceding lines for a NOTE or WARNING
+  admonition. If absent, flag P.3.
+
+- **P.4**: For each `TIP:` block, check if its body contains phrases indicating
+  non-determinism ("may take", "might", "could take", "minutes to start", "not yet").
+  If yes, flag P.4 (should be NOTE). For each `NOTE:` block, check if body contains
+  destructive language ("deletes", "removes", "destroys", "drops"). If yes, flag P.4
+  (should be WARNING).
+
+---
+
 ## Severity reference
 
 | Severity | Meaning |

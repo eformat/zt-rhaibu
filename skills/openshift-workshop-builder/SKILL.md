@@ -53,6 +53,25 @@ Reference implementation: `https://github.com/rhpds/ai-lightning-wordswarm-showr
 - Keep screenshot filenames deterministic so re-captures replace the same files.
 - Store auth state and temporary browser artifacts outside version control.
 
+### Prose Style Rules
+
+Full reference with AsciiDoc examples: `${CLAUDE_SKILL_DIR}/references/prose-style.md`
+
+**P.1 — Module summary format** (REQUIRED)  
+Every module page ends with `== Module summary` using three bold-label sections: `**What you accomplished:**` (3 past-tense bullets), `**Key takeaways:**` (3 present-tense bullets), `**Next steps:**` (prose only — never bullets).
+
+**P.2 — Exercise transitions** (REQUIRED)  
+Every exercise boundary (between `== Exercise N` ending and `== Exercise N+1` heading) must have at least one bridging sentence after the `=== Verify` block. Use one of: callback-then-pivot ("Now that you've X, let's Y"), problem-then-purpose (state the gap, then what closes it), or forward reference ("You will explore this in Exercise N").
+
+**P.3 — Workaround handling** (REQUIRED)  
+Any workaround or known deviation follows: NOTE/WARNING _before_ the command → "This is expected." → one sentence why → then the command block. Never put the explanation after the command. Complex optional depth goes in a `[%collapsible]` block.
+
+**P.4 — Admonition type** (REQUIRED)  
+- `TIP` — orientation, persona framing, practical shortcuts  
+- `NOTE` — non-determinism, expected friction, key conceptual asides  
+- `IMPORTANT` — structural, safety, or ordering constraints  
+- `WARNING` — destructive or irreversible operations
+
 ---
 
 ## Showroom Structure
@@ -469,8 +488,22 @@ Each page should follow this structure where applicable:
 4. Conceptual background (if needed)
 5. Numbered exercises with `[source,role="execute"]` blocks
 6. Verification block after each exercise
-7. Module summary (what was accomplished, key takeaways)
-8. Teaser for next module
+7. Module summary — use the exact bold-label format:
+   ```asciidoc
+   == Module summary
+
+   **What you accomplished:**
+
+   * Past-tense action (3 bullets)
+
+   **Key takeaways:**
+
+   * Present-tense declarative fact (3 bullets)
+
+   **Next steps:**
+
+   One or two sentences of prose linking to the next module — never bullets.
+   ```
 
 ### Getting Connected (`getting-connected.adoc`)
 

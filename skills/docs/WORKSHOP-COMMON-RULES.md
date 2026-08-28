@@ -1,6 +1,6 @@
 # Workshop Common Rules
 
-**Version**: 1.0
+**Version**: 1.1
 
 Shared contracts for all workshop-* skills in the OODA pipeline. Every workshop skill
 MUST reference this file and follow these rules.
@@ -194,6 +194,66 @@ location. Skills communicate through:
 - RAC artifacts (requirements, decisions, designs)
 - Git repos (showroom content, automation infrastructure)
 - Structured reports (validation tables, evidence maps)
+
+---
+
+## 8. Prose Style (REQUIRED)
+
+Every module page MUST follow these four prose rules. Full AsciiDoc examples with bad/good
+side-by-sides are in
+`skills/openshift-workshop-builder/references/prose-style.md`.
+
+### P.1 — Module summary format
+
+End every module page with `== Module summary` containing three bold-label sections:
+
+```asciidoc
+== Module summary
+
+**What you accomplished:**
+
+* Past-tense action (3 bullets)
+
+**Key takeaways:**
+
+* Present-tense declarative fact (3 bullets)
+
+**Next steps:**
+
+One or two sentences of prose linking to the next module — never bullets.
+```
+
+The conclusion module omits **Next steps**.
+
+### P.2 — Exercise transitions
+
+Every `== Exercise N` boundary must have at least one bridging sentence (after `=== Verify`,
+before the next heading). Three interchangeable formulas:
+
+- **Callback-then-pivot**: "Now that you've [done X], let's [do Y]."
+- **Problem-then-purpose**: State the gap, then what the next exercise closes.
+- **Forward reference**: "You will explore this in Exercise N."
+
+### P.3 — Workaround handling
+
+Any workaround or known deviation: NOTE/WARNING **before** the command → "This is expected."
+→ one sentence why → then the command block. Never explain after the command.
+Complex optional depth → `[%collapsible]` block.
+
+### P.4 — Admonition type
+
+| Admonition | Use for |
+|---|---|
+| `TIP` | Orientation, persona framing, practical shortcuts |
+| `NOTE` | Non-determinism, expected friction, key conceptual asides |
+| `IMPORTANT` | Structural, safety, or ordering constraints |
+| `WARNING` | Destructive or irreversible operations |
+
+**Severity handling (verify-content check IDs P.1–P.4):**
+- P.1 missing or malformed → Warning
+- P.2 missing transition → Warning
+- P.3 explanation after command → Warning
+- P.4 wrong admonition type → Info
 
 ---
 
