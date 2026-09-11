@@ -281,6 +281,33 @@ and enforced by `WORKSHOP-COMMON-RULES.md` Section 8.
 
 ---
 
+## YAML/Config Callout Check (C.1)
+
+This check is performed by each `module-reviewer` agent. It detects missed callout
+opportunities on YAML/config manifests, per the rules in
+`skills/openshift-workshop-builder/references/yaml-callouts.md` and
+`WORKSHOP-COMMON-RULES.md` Section 1a.
+
+| ID | Check | Fail condition | Severity |
+|---|---|---|---|
+| C.1 | YAML manifest callouts | A `[source,yaml]` or `[source,json]` block is within 5 lines of an `oc apply` / `oc create` / `oc process` execute block, AND has >3 non-trivial YAML keys (excluding `apiVersion`, `kind`, `metadata.name`, `metadata.namespace`), AND has no callout markers (`<1>`, `<2>`, etc.) | Info |
+
+**module-reviewer detection guidance:**
+
+- **C.1**: Scan the module for `[source,yaml]` and `[source,json]` blocks (NOT `[source,role="execute"]`).
+  For each such block:
+  1. Check the 5 lines before and 10 lines after for an `oc apply`, `oc create`, or `oc process`
+     command (in a `[source,role="execute"]` block). If no such command is nearby, skip.
+  2. Count YAML keys in the block, excluding boilerplate: `apiVersion`, `kind`,
+     `metadata.name`, `metadata.namespace`. If 3 or fewer non-trivial keys remain, skip.
+  3. Check the block for callout markers (regex: `# <\d+>` or `// <\d+>`). If present, skip.
+  4. If all three conditions trigger, flag C.1.
+
+This check is Info-level — a recommendation, not a blocker. The callout rule is RECOMMENDED,
+not REQUIRED.
+
+---
+
 ## Severity reference
 
 | Severity | Meaning |

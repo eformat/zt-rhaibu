@@ -1,6 +1,6 @@
 # Workshop Common Rules
 
-**Version**: 1.1
+**Version**: 1.2
 
 Shared contracts for all workshop-* skills in the OODA pipeline. Every workshop skill
 MUST reference this file and follow these rules.
@@ -70,6 +70,50 @@ The `+` on its own line continues a list item (keeps numbering intact):
 ----
 oc get pods
 ----
+```
+
+---
+
+## 1a. YAML/Config Callouts (RECOMMENDED)
+
+Non-executable `[source,yaml]` / `[source,json]` blocks that represent manifests or config
+applied to the cluster SHOULD use AsciiDoc numbered callouts to annotate important fields.
+
+Full reference with examples: `skills/openshift-workshop-builder/references/yaml-callouts.md`.
+
+### When to use
+
+- Block is a manifest the learner applies (`oc apply`, `oc create`, `oc process`)
+- Block has fields the learner must understand to succeed in later exercises
+- Field names are opaque without context (e.g., `modelFormat.name`, `runtime`)
+
+### When NOT to use
+
+- Executable blocks (`[source,role="execute"]`) — callout markers would be copied to terminal
+- Expected output or trivial config (1–2 obvious fields)
+- Surrounding prose already explains every field
+
+### Rules
+
+- Maximum **5 callouts per block** — more is noise
+- Each callout: one sentence — `<1> *Bold label* — explanation.`
+- Use `[source,yaml,subs="attributes,callouts"]` when the block also has `{attribute}` placeholders
+- Markers must be sequential (`<1>`, `<2>`, `<3>`) and match between inline and explanation list
+
+```asciidoc
+[source,yaml]
+----
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: vLLM                       # <1>
+      resources:
+        limits:
+          nvidia.com/gpu: "1"            # <2>
+----
+<1> *Serving runtime* — selects vLLM; other options: `ovms`, `caikit`.
+<2> *GPU limit* — requires exactly one GPU; `0` falls back to CPU.
 ```
 
 ---

@@ -72,6 +72,18 @@ Any workaround or known deviation follows: NOTE/WARNING _before_ the command →
 - `IMPORTANT` — structural, safety, or ordering constraints  
 - `WARNING` — destructive or irreversible operations
 
+### YAML/Config Callout Rules
+
+Full reference with AsciiDoc examples: `${CLAUDE_SKILL_DIR}/references/yaml-callouts.md`
+
+**C.1 — YAML manifest callouts** (RECOMMENDED)  
+Non-executable `[source,yaml]` / `[source,json]` blocks that represent manifests applied to the cluster (`oc apply`, `oc create`, `oc process`) SHOULD use numbered callouts to annotate opaque or important fields. Rules:
+- Maximum 5 callouts per block — more is noise.
+- Each callout is one sentence: `<1> *Bold label* — explanation.`
+- Use `[source,yaml,subs="attributes,callouts"]` when the block also has `{attribute}` placeholders.
+- Never add callouts to `[source,role="execute"]` blocks — the markers would be copied into the terminal.
+- Skip callouts on trivial config, expected output listings, or blocks where the surrounding prose already explains every field.
+
 ---
 
 ## Showroom Structure
@@ -395,6 +407,33 @@ oc login {openshift_api_url} -u {user} -p {password}
 ```
 
 The Showroom platform replaces `{openshift_api_url}`, `{user}`, `{password}` at deploy time. Define sensible defaults in `content/antora.yml`.
+
+### Callouts on Config/Manifest Blocks
+
+For non-executable YAML/JSON blocks that the learner applies to the cluster, use numbered
+callouts to annotate important fields (see C.1 rule in Workshop Rules above):
+
+```asciidoc
+[source,yaml]
+----
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: vLLM                       # <1>
+      resources:
+        limits:
+          nvidia.com/gpu: "1"            # <2>
+----
+<1> *Serving runtime* — selects vLLM; other options: `ovms`, `caikit`.
+<2> *GPU limit* — requires exactly one GPU; `0` falls back to CPU.
+```
+
+When the block also has `{attribute}` placeholders, combine both subs:
+`[source,yaml,subs="attributes,callouts"]`.
+
+Never use callouts on `[source,role="execute"]` blocks — the markers would be copied
+into the terminal by the Showroom execute button.
 
 ### Verification Blocks
 
