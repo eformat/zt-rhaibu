@@ -80,6 +80,52 @@ Ask yourself before adding callouts:
 
 ## Authoring Rules
 
+### Show the file before applying it
+
+When a source file exists on disk (e.g., a manifest the learner will `oc apply -f`),
+**always** add an executable `cat` command before the apply so learners can inspect the
+full contents:
+
+```asciidoc
+. Inspect the InferenceService manifest:
++
+[source,bash,role="execute"]
+----
+cat inferenceservice.yaml
+----
+
+Review the key fields:
+
+[source,yaml]
+----
+spec:
+  predictor:
+    model:
+      runtime: vllm-runtime             # <1>
+      resources:
+        limits:
+          nvidia.com/gpu: "1"            # <2>
+----
+<1> *Runtime* — must match a ServingRuntime CR that exists in your namespace.
+<2> *GPU limit* — set to `0` for CPU-only environments.
+
+. Apply the manifest:
++
+[source,bash,role="execute"]
+----
+oc apply -f inferenceservice.yaml
+----
+```
+
+The `cat` command is executable (copy/paste into terminal), so the learner sees the
+real file contents. The callout block below it highlights the fields that matter — it
+can show a trimmed excerpt rather than repeating the entire file. This three-step pattern
+(`cat` → callout excerpt → `apply`) gives learners both the full source and the guided
+annotation.
+
+Skip the `cat` step only when the YAML is generated inline (e.g., via `cat <<EOF | oc apply -f -`)
+or when the content does not originate from a file on disk.
+
 ### Maximum 5 callouts per block
 
 More than 5 is noise. If a manifest has many important fields, choose the top 5 by asking:
