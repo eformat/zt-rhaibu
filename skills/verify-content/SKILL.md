@@ -108,6 +108,16 @@ Run these inline now — they require seeing all modules at once:
 | B.5 | Workshop: ≥1 hands-on module (`03-*` or higher). Demo: ≥1 Know/Show module | None found | Critical |
 | B.6 | `nav.adoc` lists all module files | Any `.adoc` not in nav | High |
 | B.7 | Conclusion module exists | Missing | High |
+| B.8 | `nav.adoc` uses dot-prefixed section headers | Fewer than 3 dot-prefixed headers (`.Workshop`, `.Modules`, `.Wrap-up`) | Warning |
+| M.1 | TP/DP maturity banner present | `antora.yml` defines `feature_maturity: "TP"` or `"DP"` but `index.adoc` lacks the corresponding `ifeval` conditional block | Warning |
+
+**B.8 detection:** Read `nav.adoc`, count lines starting with `.` (dot-prefixed headers).
+Flag if fewer than 3. Expected: `.Workshop`, `.Modules`, `.Wrap-up`.
+
+**M.1 detection:** Read `content/antora.yml` (already parsed in Phase 2b). If
+`feature_maturity` is `"TP"` or `"DP"`, read `index.adoc` and check for
+`ifeval::["{feature_maturity}"`. If the conditional block is missing, flag M.1.
+If `feature_maturity` is `"GA"` or not set, skip this check.
 
 Collect findings. Continue regardless.
 
@@ -305,6 +315,38 @@ opportunities on YAML/config manifests, per the rules in
 
 This check is Info-level — a recommendation, not a blocker. The callout rule is RECOMMENDED,
 not REQUIRED.
+
+---
+
+## Attribute, Xref, and Grounding Checks (E.6, E.7, G.3)
+
+These checks are performed by each `module-reviewer` agent. They catch common errors
+introduced during template-based or LLM-generated content scaffolding.
+
+| ID | Check | Fail condition | Severity |
+|---|---|---|---|
+| E.6 | `subs="attributes"` on placeholder blocks | A `[source,...]` block body contains `{openshift_`, `{guid}`, `{user}`, `{password}`, `{rhoai_version}`, or other Antora attribute patterns, but the block header does not include `subs="attributes"` | High |
+| E.7 | Relative xref targets exist | An `xref:page.adoc[...]` reference (not a cross-component `xref:component::...`) targets a file that does not exist in `pages/` | High |
+| G.3 | No orphaned NOT-IN-DOCS markers | Module page contains `// NOT-IN-DOCS:` comments that were not removed or resolved | Info |
+
+**module-reviewer detection guidance:**
+
+- **E.6**: For each `[source,...]` block in the module, scan the block body (between `----`
+  delimiters) for Antora attribute patterns: `{openshift_`, `{guid}`, `{user}`, `{password}`,
+  `{rhoai_version}`, `{feature_maturity}`, `{project_name}`, `{lab_name}`. If any are found,
+  check the block header for `subs="attributes"`. Skip blocks inside `[source,asciidoc]`
+  fences (AsciiDoc examples showing literal attribute syntax).
+
+- **E.7**: Extract all `xref:<target>[...]` patterns from the module. For targets that are
+  bare filenames (no `:` or `::` component separator), verify the file exists in
+  `content/modules/ROOT/pages/`. Skip cross-component xrefs (targets containing `::` or
+  `:ROOT:`) — those resolve only when both components are in the same playbook and cannot be
+  checked locally.
+
+- **G.3**: Grep the module page for `// NOT-IN-DOCS:`. If found, flag G.3 as Info. These
+  markers signal that content has no product documentation backing and should be reviewed.
+  They are expected during development; finding them in "ready" content is a signal that
+  doc grounding was incomplete.
 
 ---
 

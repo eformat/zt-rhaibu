@@ -43,7 +43,12 @@ Scaffold two codebases from RAC requirements: a content repo and an infrastructu
   contract, showroom pod anatomy, and wrapper layout are documented in
   `${CLAUDE_SKILL_DIR}/references/infra-patterns.md`.
 - See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
-  and quality rules.
+  and quality rules (Sections 9–11 cover maturity depth, doc grounding, and
+  cross-workshop navigation).
+- See `${CLAUDE_SKILL_DIR}/references/doc-grounding.md` for the documentation
+  grounding workflow, self-check checklist, and maturity-specific scaffolding patterns.
+- See `${CLAUDE_SKILL_DIR}/references/cross-workshop-nav.md` for Antora
+  cross-component xref patterns when the workshop is part of a multi-workshop catalog.
 
 ## Prerequisites
 
@@ -165,6 +170,13 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
   ```
   Also MUST use `version: ~` (not a pinned version like `'1.0'`) — a versioned
   component disables the theme's pagination nav.
+  MUST define `feature_maturity` — see `${CLAUDE_SKILL_DIR}/references/doc-grounding.md`
+  for the full maturity scaffolding guide:
+  ```yaml
+  asciidoc:
+    attributes:
+      feature_maturity: "GA"   # or "TP" or "DP"
+  ```
 - `content/modules/ROOT/nav.adoc` — navigation tree with entries for each module
 - `.gitignore` — exclude `node_modules/`, `www/`, `.cache/` (not `docs/` — output is `www/`)
 - `content/supplemental-ui/css/site-extra.css` — image shadow + send-to button styles
@@ -181,7 +193,11 @@ Follow the `openshift-workshop-builder` workflow to create the showroom structur
 **Content pages** under `content/modules/ROOT/pages/`:
 
 - `index.adoc` — welcome page with: title, what you'll learn, who this is for,
-  prerequisites, estimated time, link to first module
+  prerequisites, estimated time, link to first module. For TP/DP features, add
+  `ifeval` maturity banners after the page title (see
+  `${CLAUDE_SKILL_DIR}/references/doc-grounding.md` for the exact blocks).
+  Adjust content depth by maturity: GA = full hands-on, TP = same + API-unstable
+  warnings, DP = guided-tour mode with fewer execute blocks
 - `getting-connected.adoc` — login steps using `{user}` / `{password}` attributes,
   project setup, environment verification
 - `NN-module-MM-<slug>.adoc` — one page per module requirement, with:
@@ -297,6 +313,11 @@ decided validate ~/git/zt-<slug>-rac/
 # Render the infra wrapper against the chart (no cluster needed):
 cd ~/git/zt-<slug>-automation && make template CHART=~/git/zt-showroom-deployer
 ```
+
+Also check:
+- `feature_maturity` is set in `content/antora.yml`
+- Every `[source,...]` block containing `{...}` attribute placeholders has `subs="attributes"`
+- TP/DP features have the corresponding `ifeval` banner in `index.adoc`
 
 Confirm requirements still pass and the chart renders cleanly. Print a summary:
 - Files created in content repo (count by type: .adoc, .yaml, .json, .yml)

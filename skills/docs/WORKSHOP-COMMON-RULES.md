@@ -1,6 +1,6 @@
 # Workshop Common Rules
 
-**Version**: 1.2
+**Version**: 1.3
 
 Shared contracts for all workshop-* skills in the OODA pipeline. Every workshop skill
 MUST reference this file and follow these rules.
@@ -298,6 +298,160 @@ Complex optional depth → `[%collapsible]` block.
 - P.2 missing transition → Warning
 - P.3 explanation after command → Warning
 - P.4 wrong admonition type → Info
+
+---
+
+---
+
+## 9. Feature Maturity Depth Rules (REQUIRED)
+
+Workshop content depth MUST vary based on the feature's maturity level. Define
+the maturity in `content/antora.yml` and adjust content accordingly.
+
+### M.1 — GA (Generally Available)
+
+Default mode. Full hands-on exercises with real commands, `=== Verify` blocks
+after each exercise, YAML callouts on applied manifests. No maturity banner
+needed.
+
+### M.2 — TP (Technology Preview)
+
+Same hands-on depth as GA, plus:
+
+- A WARNING admonition at the top of `index.adoc` rendered conditionally:
+
+```asciidoc
+ifeval::["{feature_maturity}" == "TP"]
+WARNING: This feature is a *Technology Preview*. Technology Preview features are
+not supported with Red Hat production service-level agreements (SLAs) and might
+not be functionally complete.
+endif::[]
+```
+
+- NOTE admonitions before any steps whose API or manifest schema may change
+  between releases.
+
+### M.3 — DP (Developer Preview)
+
+Guided-tour mode — descriptive prose, observe/explore steps, fewer execute
+blocks. No full end-to-end exercises.
+
+- A WARNING admonition at the top of `index.adoc` rendered conditionally:
+
+```asciidoc
+ifeval::["{feature_maturity}" == "DP"]
+WARNING: This feature is a *Developer Preview*. Developer Preview features are
+provided as-is with no support and no guarantee of future availability.
+endif::[]
+```
+
+### M.4 — Maturity attribute
+
+`content/antora.yml` MUST define:
+
+```yaml
+asciidoc:
+  attributes:
+    feature_maturity: "GA"   # or "TP" or "DP"
+```
+
+This attribute enables conditional banners via `ifeval` and allows verify-content
+to check maturity-specific rules.
+
+**Severity handling (verify-content check IDs M.1):**
+- Missing maturity banner when TP/DP → Warning
+- Missing `feature_maturity` attribute → Info
+
+---
+
+## 10. Documentation Grounding (RECOMMENDED)
+
+Product documentation is the source of truth for all commands, manifests, console
+navigation paths, and API calls. Workshop content SHOULD be grounded in
+extracted documentation to prevent fabrication.
+
+### G.1 — Doc extraction
+
+When product documentation is available as PDFs, extract text:
+
+```bash
+pdftotext <product-docs>.pdf /tmp/<slug>-docs/<name>.txt
+```
+
+The text files serve as grepable source material for all workshop content. Store
+extraction references in the RAC repo: `~/git/zt-<slug>-rac/assets/doc-extracts/`.
+
+### G.2 — Grounded commands
+
+Every `oc` command, YAML manifest, and console navigation path in a workshop
+SHOULD be traceable to the product documentation. If the command comes from
+upstream docs, community guides, or the author's experience, note the source.
+
+### G.3 — NOT-IN-DOCS reporting
+
+When content cannot be found in the product documentation, mark the section:
+
+```asciidoc
+// NOT-IN-DOCS: <feature-name> — <reason this content has no doc backing>
+```
+
+This marker signals that reviewers should assess whether the gap is a product
+documentation issue or a content error. The verify-content skill checks for
+orphaned NOT-IN-DOCS markers.
+
+### G.4 — Version coupling
+
+Doc extractions MUST be tagged with the product version (e.g., RHOAI 3.5). When
+the product version changes, extractions must be refreshed and affected workshop
+content re-audited against the new docs.
+
+**Severity handling (verify-content check ID G.3):**
+- Orphaned `// NOT-IN-DOCS:` markers → Info
+
+---
+
+## 11. Cross-Workshop Navigation (RECOMMENDED)
+
+Workshops that are part of a multi-workshop catalog SHOULD include navigation
+links to related and prerequisite workshops.
+
+### N.1 — "Where next in the catalog"
+
+Conclusion pages SHOULD include a `== Where next in the catalog` section after
+the resources list, containing 1–3 Antora cross-component xrefs:
+
+```asciidoc
+== Where next in the catalog
+
+Continue your learning journey with these related workshops:
+
+* xref:sibling-slug::index.adoc[Sibling Workshop Title]
+* xref:another-slug::index.adoc[Another Workshop Title]
+```
+
+### N.2 — Prerequisite xrefs
+
+Index pages SHOULD list prerequisite workshops in the `== Prerequisites` section:
+
+```asciidoc
+* Recommended prerequisite: complete the xref:prereq-slug::index.adoc[Prerequisite Workshop] workshop first
+```
+
+### N.3 — Standalone coherence
+
+Each workshop MUST remain standalone-buildable and understandable even with
+cross-references. When a workshop references content from a sibling, include
+a bridge sentence:
+
+> If you have not completed the <sibling> workshop, the summary below covers
+> what you need.
+
+Cross-component xrefs only resolve when both workshops are registered in the
+same Antora playbook (`antora-playbook.yml`). Workshops that may be deployed
+standalone should treat cross-references as optional enhancements.
+
+**Severity handling:**
+- N.1–N.3 are RECOMMENDED, not REQUIRED. Skip for workshops not part of a catalog.
 
 ---
 
