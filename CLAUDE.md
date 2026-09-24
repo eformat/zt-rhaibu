@@ -5,8 +5,8 @@ Workshop creation pipeline based on the OODA loop. Each phase is a skill in `ski
 ## Pipeline
 
 ```
-Observe → Orient → Do → Act → Publish
-(images)   (RAC)   (code)  (deploy+test)  (PR to p-zero-lessons)
+Observe → Orient → Do → Quality → Act → Publish
+(images)   (RAC)   (code) (enrich)  (deploy+test)  (PR to p-zero-lessons)
 ```
 
 **Each workshop gets its own RAC repo** at `~/git/zt-<slug>-rac/` — the planning contract between phases.
@@ -18,6 +18,7 @@ Observe → Orient → Do → Act → Publish
 | Do | `workshop-do` | RAC artifacts | `~/git/zt-<slug>-showroom/` + `~/git/zt-<slug>-automation/` |
 | Act | `workshop-act` | Scaffolded repos + RAC requirements | Deployed workshop on prelude cluster |
 | Publish | `workshop-act` (step 8) | Validated showroom content | PR into `p-zero-lessons/lessons/<slug>/` |
+| Quality | `quality-enrichment` | Enriched workshops + RAC + code repos | Per-workshop quality report + content fixes |
 
 Two working repos per workshop: `zt-<slug>-rac/` and `zt-<slug>-showroom/`.
 Finished content is contributed to **`https://github.com/red-hat-ai-dev/p-zero-lessons`** as `lessons/<slug>/`.
@@ -55,6 +56,7 @@ This factory repo (`zt-rhaibu`) holds only skills and tooling — no per-worksho
 - **openshift-ai-3-3-expert** — RHOAI workbenches, model serving, pipelines
 - **verify-content** (`/verify-content`) — validates showroom content against Red Hat quality standards; quality gate in workshop-act. Vendored from the RHDP skills marketplace and registered as a slash command.
 - **catalog-builder** (`/catalog-builder`) — builds an RHDP AgnosticV catalog entry at publish time. Vendored from the RHDP skills marketplace and registered as a slash command.
+- **quality-enrichment** (`/quality-enrichment`) — audits and uplifts bulk-scaffolded workshops in the ralf-wiggum monorepo. Validates RAC coverage, audits screenshots, enriches with code from companion repos (`red-hat-ai-examples`, `trustyai-llm-demo`, etc.), and fixes content quality defects. Operates post-enrichment, before Act.
 
 ## RAC
 

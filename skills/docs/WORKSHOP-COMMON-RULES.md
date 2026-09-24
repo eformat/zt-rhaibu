@@ -228,9 +228,10 @@ Every SKILL.md ends with a `## Related Skills` section listing connected skills:
 Skills in the OODA pipeline follow a sequential handoff:
 
 ```
-Observe → Orient → Do → Act
-                    ↑      ↑
-              screenshot  verify-content
+Observe → Orient → Do → Quality → Act
+                    ↑       ↑        ↑
+              screenshot    |   verify-content
+                     quality-enrichment
 ```
 
 Each skill reads from the previous phase's output and writes to its own output
