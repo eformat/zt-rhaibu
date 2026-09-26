@@ -173,6 +173,10 @@ its `CONTENT_DIR`:
 | No YAML callouts on manifests | +1 | `[source,yaml]` blocks near `oc apply` without `<1>` markers |
 | Missing module summaries | +1 | Pages without `== Module summary` |
 | Missing exercise transitions | +1 | Adjacent `== Exercise` headings with no bridging prose |
+| **No executable content for deploy/run claims** | **+3** | Exercises mention deploy/apply/install/run actions (Kustomize manifests, installer, `oc apply`, deployment) but the content contains **zero** `role="execute"` blocks or manifests for them — narrative-only content |
+| **Runtime-demonstration gap** | **+3** | Verify sections or prose claim a runtime state ("the agent responds", "Running", "traces show", "the dashboard displays") with **no screenshot** evidence AND no recorded Act run in `qa/runs/<slug>/quality.md` |
+
+**Narrative-only and runtime-demonstration gaps must NOT be closed as "by-design".** They require either a workshop-act run (deploy → exercise → capture evidence) or an explicit human-acknowledged deferral recorded in the workshop's quality.md.
 
 Sort the work queue by triage score descending (worst quality first).
 
@@ -243,7 +247,7 @@ file:
    - `MUST verify` / `SHOULD observe` -> look for `=== Verify` sections
    - Visual criteria ("MUST see", "observe the dashboard") -> look for `image::` refs
 3. Also check `## Verified By` paths in module requirements -- do those files exist?
-4. Build an evidence map:
+4. Build an evidence map — with FOUR statuses, distinguishing "described" from "proven":
 
 ```
 | Requirement ID | Criterion | Content Evidence | Status |
@@ -252,12 +256,19 @@ file:
 | RHAIBU-...     | REQ-002 Deploy model | module-02:45 oc apply | COVERED |
 | RHAIBU-...     | REQ-003 Query API | module-02:89 curl (vague verify) | PARTIAL |
 | RHAIBU-...     | REQ-004 Advanced routing | (none found) | GAP |
+| RHAIBU-...     | REQ-005 Describe plugin | module-02 prose only, no code/verify | DESCRIBED |
 ```
 
-5. Run `decided validate RAC_DIR/` to check RAC corpus health. Report any
-   validation errors but do **not** fix RAC artifacts -- flag them for human attention.
+**Status semantics:**
+- `COVERED` — the criterion is exercised by executable content (execute blocks, manifests) AND a Verify section proves the outcome
+- `PARTIAL` — executable content exists but the verify is vague or incomplete
+- `DESCRIBED` — the criterion is satisfied by narrative prose only (no executable content, no verify) — a tour, not a lab. For requirements whose verb is deploy/run/verify, DESCRIBED is a **gap**: the workshop claims the learner will do something but provides no way to do it.
+- `GAP` — no evidence found
 
-**Output:** RAC evidence map with COVERED / PARTIAL / GAP status per criterion.
+A workshop whose deploy/run requirements are only DESCRIBED must be flagged for the
+human: either re-orient the RAC (it is a conceptual tour — legitimate for some topics)
+or enrich the content with real deployment code (workshop-orient decides the scope, NOT
+this skill).
 
 ### Phase 2 -- Screenshot Audit
 
@@ -298,7 +309,21 @@ screenshots using patterns from `skills/workshop-screenshot/references/capture-p
 For workshops that have TODO markers, placeholder tokens, or GAP status from
 Phase 1, search the enrichment source repos for real code examples.
 
-**3a. Build a topic-to-repo mapping** from the workshop's tags:
+**3a. Completeness audit first** — before the topic-to-repo mapping, verify the content
+is *executable where it claims to be*:
+
+- Scan every exercise for deploy/apply/install/run claims ("validated Kustomize manifests",
+  "automated installer", "apply the manifest", "deploy the agent"). For each claim, verify
+  the content actually contains the referenced code/manifest/execute block.
+- A claim with no code behind it is a **completeness gap**: flag it in the evidence map
+  (DESCRIBED status) and search the enrichment repos for real manifests/commands to fill it.
+  Unlike example-selection (3c), completeness gaps are NOT optional — report them as
+  items needing human attention with candidate code.
+- If the workshop is deliberately a conceptual tour (every exercise is describe/explain and
+  the RAC matches), note it in the report — do not force enrichment; the RAC orientation
+  decision belongs to the human via workshop-orient.
+
+**3a-legacy. Build a topic-to-repo mapping** from the workshop's tags:
 
 | Tag Pattern | Local Path | Upstream URL | Subdirectory |
 |-------------|-----------|--------------|--------------|
@@ -508,7 +533,11 @@ sessions alongside `qa/status.yml` (functional runs).
   report it. Only humans update RAC via workshop-orient.
 - **Idempotent operation.** Skip workshops that already meet the quality bar
   (triage score == 0). Re-running the skill on an already-fixed workshop should
-  produce zero changes.
+  produce zero changes. **Exception:** a triage score of 0 does NOT close
+  runtime-demonstration or completeness gaps — a workshop whose exercises claim
+  deploy/run behavior with no captured evidence and no recorded Act run stays in
+  the report with those gaps until a workshop-act run provides the evidence or the
+  human records an explicit deferral in the workshop's quality.md.
 - **Blast radius containment.** Each subagent operates on exactly one workshop.
   A failure in one workshop does not affect others.
 - **Dry-run by default for code enrichment.** Phase 3 code embedding requires
@@ -533,7 +562,12 @@ sessions alongside `qa/status.yml` (functional runs).
 - **Scaffolding new workshops** -- use workshop-do (or the ralf-wiggum-loop for monorepo bulk scaffold)
 - **Initial enrichment from docs** -- use workshop-do or the ralf-wiggum-loop (Mode 2)
 - **RAC creation or modification** -- use workshop-orient
-- **Deploying workshops to a cluster** -- use workshop-act
+- **Deploying workshops to a cluster** -- use workshop-act. **However:** when the triage
+  surfaces runtime-demonstration gaps (deploy/run claims with no captured evidence), the
+  final report MUST route those workshops to workshop-act before publish — the Quality
+  phase's report is the gate that ensures Act happens. A workshop published with
+  runtime claims and no demonstration evidence is a pipeline failure, not a
+  quality-bar miss.
 - **Version bumps** -- structural, not quality
 - **Cross-workshop navigation** -- handled by the hub component / journey_pass.py
 - **Antora playbook or site.yml changes** -- structural, not quality
