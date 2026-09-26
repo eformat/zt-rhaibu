@@ -281,6 +281,12 @@ Scan the content for screenshot references and validate them:
 4. **Check for empty images directory**: only `.gitkeep` present.
 5. **Cross-reference** with the Phase 1 evidence map: do RAC criteria that imply
    visual verification have matching screenshots?
+6. **Audit existing screenshots for filler**: an image whose filename or placement
+   suggests an incidental state (`login`, `signin`, `sso`, `unauthorized`, or an
+   image referenced before any exercise code runs) is **filler, not evidence** —
+   flag it for replacement with the topical state (see the screenshot
+   topic-relevance rules below). A workshop can have screenshots AND still have
+   a runtime-demonstration gap: screenshots present ≠ the topic demonstrated.
 
 Build the screenshot audit:
 
@@ -296,6 +302,34 @@ Build the screenshot audit:
 screenshots using patterns from `skills/workshop-screenshot/references/capture-patterns.md`.
 **Ask the Human before capturing** -- do not auto-capture without confirmation.
 
+**Screenshot topic-relevance rules (mandatory before ANY capture):**
+
+The priority is real content that illustrates the workshop subject. A screenshot is
+evidence of a capability, not a record of incidental chrome. Before capturing, ask:
+**"would a learner learn the exercise's capability from this image?"** If not, find the
+state that does.
+
+1. **Capture the demonstrated outcome of the exercise topic** — the agent responding in
+   its UI, the leaderboard with ranked models, the dialog showing the requested
+   configuration, the running workload. The image must teach the capability the
+   exercise exists to teach.
+2. **Filler states are NOT evidence** — never capture: login gates, SSO/identity-provider
+   pages, cookie banners, loading spinners, empty dashboards, transitional or
+   letterboxed renders, generic error pages. These illustrate nothing about the topic
+   and waste the learner's attention.
+3. **If the exercise topic IS an enforcement surface** (e.g. access control, auth),
+   capture the enforcement or delegation state — the OAuth "Authorize Access" page
+   showing the requested permissions, a 403/forbidden response for an unauthorized
+   user — never the login prompt itself.
+4. **Framing**: capture the element or a cropped region at a standard viewport
+   (1280x720). Full-viewport shots of gate pages render mostly empty and are poor
+   evidence. After capture, re-check: if the image is mostly whitespace, chrome, or a
+   transitional state, find the topical state and re-capture.
+5. **Prefer populated states**: a dialog/wizard captured mid-flow with the learner's
+   values filled (e.g. the register-model form with the model name entered) is stronger
+   evidence than the empty state — but never fabricate data that the exercise does not
+   produce.
+
 **If no cluster**, report the gaps as "needs cluster" and move on.
 
 **Fixes applied (if not dry-run):**
@@ -303,6 +337,10 @@ screenshots using patterns from `skills/workshop-screenshot/references/capture-p
   on disk
 - Fix broken `image::` references where the filename has a typo but a similar
   file exists in the images directory
+- **Replace filler screenshots**: if an existing image in the workshop is a login
+  gate, SSO page, or otherwise illustrates an incidental state instead of the
+  exercise topic, flag it for replacement and re-capture the topical state (ask the
+  Human which topic surface to show if ambiguous)
 
 ### Phase 3 -- Code Enrichment
 
@@ -553,6 +591,13 @@ sessions alongside `qa/status.yml` (functional runs).
   real credentials, tokens, or internal hostnames. Use `{attribute}` placeholders.
 - **Screenshot integrity.** Never fabricate screenshots. Mark missing screenshots
   as gaps. Only capture from a live, verified cluster with human confirmation.
+- **Screenshot topic-relevance.** Every captured image must illustrate the
+  exercise's capability — never an incidental state. Login gates, SSO pages,
+  loading spinners, empty dashboards, and transitional renders are filler, not
+  evidence. If a capture doesn't teach the topic, find the state that does
+  (the demonstrated outcome, or the enforcement/delegation surface for
+  enforcement topics) and capture that instead. A filler screenshot is worse
+  than none: it costs the learner attention and hides the real gap.
 - **ONLY edit files** under the workshop's own content directory
   (`CONTENT_DIR` and `IMAGES_DIR`). Never touch `feature-matrix.yml`, RAC
   artifacts, site playbooks, other workshops' directories, or hub pages.
