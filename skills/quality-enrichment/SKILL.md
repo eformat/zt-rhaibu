@@ -175,6 +175,7 @@ its `CONTENT_DIR`:
 | Missing exercise transitions | +1 | Adjacent `== Exercise` headings with no bridging prose |
 | **No executable content for deploy/run claims** | **+3** | Exercises mention deploy/apply/install/run actions (Kustomize manifests, installer, `oc apply`, deployment) but the content contains **zero** `role="execute"` blocks or manifests for them — narrative-only content |
 | **Runtime-demonstration gap** | **+3** | Verify sections or prose claim a runtime state ("the agent responds", "Running", "traces show", "the dashboard displays") with **no screenshot** evidence AND no recorded Act run in `qa/runs/<slug>/quality.md` |
+| **Image content mismatch** | **+4** | Found by the Phase 2 content-match audit (open each PNG and compare pixels against alt-text + surrounding step): 404/error pages, OAuth error JSON, welcome tour modals, loading spinners, empty states contradicting the step, wrong nav target. Not detectable by static scan — Phase 2 must run for every workshop with embedded images |
 
 **Narrative-only and runtime-demonstration gaps must NOT be closed as "by-design".** They require either a workshop-act run (deploy → exercise → capture evidence) or an explicit human-acknowledged deferral recorded in the workshop's quality.md.
 
@@ -287,15 +288,34 @@ Scan the content for screenshot references and validate them:
    flag it for replacement with the topical state (see the screenshot
    topic-relevance rules below). A workshop can have screenshots AND still have
    a runtime-demonstration gap: screenshots present ≠ the topic demonstrated.
+7. **Content-match audit (mandatory — file existence is NOT image correctness)**:
+   filename and alt-text describe *intent* and are often honest while the pixels
+   are wrong. For every embedded image, **OPEN the PNG** (read it as an image) and
+   visually verify it shows what the alt-text and surrounding step text describe.
+   Record a verdict per image in the audit table (add a `Content Match` column):
+
+   | Verdict | Meaning |
+   |---------|---------|
+   | OK | pixels match the described state |
+   | WRONG | image shows a different page, an error/404, an OAuth error JSON, a welcome tour modal, a loading spinner, or an empty state that contradicts the step |
+   | STALE | captured on an older UI build; the described element no longer matches |
+   | MISSING | file does not exist |
+
+   WRONG and STALE are defects: remove the embed (leave a `// TODO(<reason>)`
+   comment) or re-capture from the correct state — never ship a mismatched image.
+   Also hash-deduplicate: two workshops embedding the same file for different
+   topics means at least one is wrong — a shared capture can be correct in one
+   workshop and wrong in another (check each embed, not each file).
 
 Build the screenshot audit:
 
 ```
-| Image Reference | Page | File Exists | RAC Criterion | Status |
-|-----------------|------|-------------|---------------|--------|
-| 01-login.png | getting-connected.adoc | NO | REQ-001 | MISSING |
-| 02-dashboard.png | module-01.adoc | YES (24KB) | REQ-002 | OK |
-| 03-deploy-form.png | module-02.adoc | NO | REQ-003 | MISSING |
+| Image Reference | Page | File Exists | Content Match | RAC Criterion | Status |
+|-----------------|------|-------------|---------------|---------------|--------|
+| 01-login.png | getting-connected.adoc | NO | - | REQ-001 | MISSING |
+| 02-dashboard.png | module-01.adoc | YES (24KB) | OK | REQ-002 | OK |
+| 03-deploy-form.png | module-02.adoc | NO | - | REQ-003 | MISSING |
+| 04-settings.png | module-02.adoc | YES (98KB) | WRONG (404 page) | REQ-004 | DEFECT |
 ```
 
 **If a live cluster is available** (`HAS_CLUSTER: true`), offer to capture missing

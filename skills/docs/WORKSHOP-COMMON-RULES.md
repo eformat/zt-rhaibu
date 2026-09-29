@@ -133,6 +133,17 @@ image::filename.png[Alt text,link=self,window=blank,width=700]
 - `width=700` — constrain display width (500-800px typical)
 - Alt text is the first positional parameter — make it meaningful for accessibility
 
+### Content Correctness (REQUIRED)
+
+An embedded image must show what its alt text and surrounding step text describe.
+File existence is not correctness: verify every capture visually after taking it
+(final URL/title plus a read of the image). 404 pages, OAuth error pages, welcome
+tour modals, loading spinners, and empty states that contradict the step are worse
+than no image — they teach the wrong thing. If the described state does not exist
+in the current UI build, remove the embed and leave a `// TODO(<reason>)` comment
+instead of shipping a mismatched capture. A capture file shared between workshops
+may be correct in one and wrong in another — audit each embed.
+
 ### Filename Conventions
 
 - Use deterministic names so re-captures replace existing files: `01-keycloak-login.png`, `06-workbench-creation-form.png`

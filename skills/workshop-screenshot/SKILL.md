@@ -155,7 +155,18 @@ For each shot in the ordered list:
    ```
    playwright-cli screenshot ~/git/zt-<slug>-showroom/content/modules/ROOT/assets/images/<filename>
    ```
-4. **Verify** the file was created and has a reasonable size (>10KB for a real screenshot)
+4. **Verify the capture shows the expected state** — file size alone proves nothing
+   (a 404 page, an OAuth error, or a welcome-tour modal over the wrong page all
+   exceed 10KB):
+   a. **Check the final URL and page title** after navigation. A redirect to an
+      OAuth error page, a console/dashboard 404, or a different nav target than the
+      shot's `context` describes is a FAILED capture — retry from the correct state.
+   b. **Re-open the captured file and visually confirm** it shows the state the
+      shot's `context` describes: the expected page, the populated state, the
+      correct selection. Reject captures showing: 404/error pages, OAuth
+      error JSON, welcome tour modals, loading spinners, or empty states that
+      contradict the context — re-capture from the correct state or mark the shot
+      as failed. Do not embed a rejected capture.
 
 Between flow groups, save and restore auth state:
 ```
@@ -280,6 +291,14 @@ playwright-cli -s=workshop-screenshots close
 - Never fabricate screenshots. Only capture from live, running systems. If the cluster
   is not ready or a page does not load, mark the shot as failed — do not use placeholder
   images.
+- **Never embed an unverified capture.** Every screenshot is reviewed before embedding
+  (step 4): final URL/title checked, pixels confirmed against the shot's `context`.
+  A capture of a 404, an auth error, a welcome modal, a loading state, or the wrong
+  page is worse than no image — it teaches the wrong thing.
+- Every workshop with embedded images needs a **content-match audit** (see
+  `quality-enrichment` Phase 2 step 7): open each PNG and verify it shows what the
+  alt-text and surrounding step describe. Filename and alt-text describe intent —
+  only the pixels prove the state.
 - Use deterministic filenames so re-captures replace existing files without requiring
   AsciiDoc edits.
 - Save screenshots directly to the showroom repo's `assets/images/` directory.
