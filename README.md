@@ -22,6 +22,7 @@ Standalone skills.
 | Phase | Skill | What happens |
 |-------|-------|-------------|
 | **Screenshot** | `/workshop-screenshot` | Capture live screenshots from cluster, embed `image::` refs in AsciiDoc, write RAC evidence |
+| **Quality** | `/quality-enrichment` | Audit and uplift workshop quality: validate RAC coverage, audit screenshots, enrich with real code from companion repos, fix content defects |
 
 ## Quick start
 
@@ -82,6 +83,7 @@ Standalone skills
 | Skill | Purpose |
 |-------|---------|
 | `workshop-screenshot` | Capture live screenshots from a cluster and embed them into AsciiDoc content |
+| `quality-enrichment` | Audit and uplift workshop quality: validate RAC coverage, audit screenshots, enrich with code from companion repos, fix content defects (single-workshop or monorepo mode) |
 
 ### Domain skills
 
