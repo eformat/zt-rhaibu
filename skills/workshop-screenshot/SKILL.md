@@ -4,8 +4,10 @@ description: >
   Adaptive screenshot capture helper for workshop content. Reads AsciiDoc pages and
   RAC requirements to determine which screenshots are needed, captures them via
   playwright-cli from a live cluster, embeds image:: references into .adoc pages,
-  and rebuilds. Use when someone wants to "capture screenshots", "take screenshots",
-  "update screenshots", "screenshot the workshop", "recapture images", or "refresh
+  and rebuilds. CLI outputs are captured as terminal-styled renders of the real
+  command output (see references/term.py); browser UI as live screenshots. Use when
+  someone wants to "capture screenshots", "take screenshots", "update screenshots",
+  "screenshot the workshop", "render terminal shots", "recapture images", or "refresh
   workshop images". Called by workshop-act during acceptance testing and optionally
   by workshop-do when a cluster is available. Not intended for standalone use outside
   the OODA pipeline.
@@ -17,6 +19,9 @@ triggers:
     - "recapture images"
     - "refresh screenshots"
     - "screenshot workshop"
+    - "terminal screenshots"
+    - "render CLI output"
+    - "terminal shots"
   matchMode: any
 enabled: true
 ---
@@ -44,7 +49,9 @@ requirements to determine what to capture rather than relying on a static list.
 - See `skills/docs/WORKSHOP-COMMON-RULES.md` for shared AsciiDoc, image, security,
   and quality rules.
 - Reference `${CLAUDE_SKILL_DIR}/references/capture-patterns.md` for reusable
-  playwright-cli patterns for common OpenShift/RHOAI screenshot scenarios.
+  playwright-cli patterns for common OpenShift/RHOAI screenshot scenarios,
+  including the **terminal-rendered CLI shots** pipeline
+  (`references/term.py`).
 
 ## Prerequisites
 
@@ -179,6 +186,45 @@ If a capture fails (element not found, navigation error, timeout):
 - Skip to the next shot in the same flow
 - Do not abort the entire capture run
 
+#### Terminal-rendered CLI shots
+
+For exercise steps that show a CLI command and its expected output, do not
+screenshot a live terminal — render the REAL captured output as a
+terminal-styled HTML page instead (dark theme, traffic-light dots, green
+`$ command` line). The text is the real output of the real command on the
+live cluster; only the chrome is synthesized. Hand-written or "expected"
+output text is fabrication — do not do it.
+
+Use a terminal render when the step says "run this command" or shows expected
+output, when the output is long or wide (live terminal screenshots would be
+illegible), and for consistency across a CLI-heavy module. Browser UI shots
+still use live captures.
+
+Pipeline (run the real command → render → serve → capture the `#term` box):
+
+```bash
+# 1. real command, real output
+oc get datasciencecluster -A > /tmp/term/out02.txt 2>&1
+# 2. render (width in px — wide enough that no line wraps)
+python3 ${CLAUDE_SKILL_DIR}/references/term.py "oc get datasciencecluster -A" \
+  /tmp/term/out02.txt /tmp/term/02.html 900
+# 3. serve
+python3 -m http.server 18921 -d /tmp/term &
+```
+
+```
+# 4. capture the terminal box only
+playwright-cli -s=workshop-screenshots open http://localhost:18921/02.html
+playwright-cli -s=workshop-screenshots screenshot "#term" \
+  --filename ~/git/zt-<slug>-showroom/content/modules/ROOT/assets/images/02-dsc-ready.png
+```
+
+Redact secrets from rendered text — API keys as short prefixes only
+(`sk-oai-1ZJqw...`), never full values, no passwords or tokens. Verify the
+render like any capture: open the PNG and confirm the text matches the real
+command output. Full styling, width, and redaction details:
+`references/capture-patterns.md` → "Terminal-Rendered CLI Shots".
+
 ### 4. Embed into AsciiDoc
 
 For each successfully captured screenshot:
@@ -290,7 +336,9 @@ playwright-cli -s=workshop-screenshots close
 
 - Never fabricate screenshots. Only capture from live, running systems. If the cluster
   is not ready or a page does not load, mark the shot as failed — do not use placeholder
-  images.
+  images. Terminal renders (see step 3) synthesize only the chrome (window bar,
+  colors) around the REAL captured output — the text itself must come from the live
+  cluster. Rendering invented or "expected" output text is fabrication.
 - **Never embed an unverified capture.** Every screenshot is reviewed before embedding
   (step 4): final URL/title checked, pixels confirmed against the shot's `context`.
   A capture of a 404, an auth error, a welcome modal, a loading state, or the wrong
@@ -319,7 +367,8 @@ playwright-cli -s=workshop-screenshots close
 - Planning which modules need screenshots — use `workshop-orient`
 - Analyzing demo applications — use `workshop-observe`
 - Video recording or screen recording
-- Screenshot editing, cropping, or annotation
+- Screenshot editing, cropping, or annotation of captured images (terminal-rendered
+  CLI shots of real output are in scope — see step 3 and `references/term.py`)
 
 ## Related Skills
 

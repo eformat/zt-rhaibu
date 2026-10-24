@@ -1,7 +1,82 @@
 # Capture Patterns Reference
 
 Reusable playwright-cli patterns for capturing OpenShift and RHOAI screenshots.
-These patterns were validated against RHOAI 3.3 on OpenShift 4.21.
+These patterns were validated against RHOAI 3.3 on OpenShift 4.21 and RHOAI 3.5
+on OpenShift 4.x (m6lx9-class cluster, Oct 2026).
+
+## Terminal-Rendered CLI Shots
+
+Raw terminal screenshots (font rendering, window chrome, the operator's prompt
+history) are noisy and inconsistent between captures. For exercise steps that
+show a CLI command and its expected output, render the REAL captured output as
+a terminal-styled HTML page instead — crisp, consistent, and it reads like
+exemplar documentation. Validated across 62 screenshots in the RHOAI Operations
+workshop (terminal renders for CLI outputs, live captures for browser UI).
+
+**The rule that makes this legitimate:** the text must be the REAL captured
+output of the real command on the live cluster — never hand-written or
+"expected" output. Only the chrome (window bar, traffic-light dots, colors) is
+synthesized. Fabricated output text violates the never-fabricate guardrail.
+
+### Pipeline
+
+1. **Run the real command and capture its output** to a text file:
+
+   ```bash
+   oc get datasciencecluster -A > /tmp/term/out02.txt 2>&1
+   ```
+
+   Keep the commands that produced each file — the render title quotes them.
+
+2. **Render** with `references/term.py`:
+
+   ```bash
+   python3 ${CLAUDE_SKILL_DIR}/references/term.py \
+     "oc get datasciencecluster -A" /tmp/term/out02.txt /tmp/term/02.html 900
+   ```
+
+   Arguments: `<title>` (quoted command + optional outcome note), `<output-file>`,
+   `<out-html>`, `[width-px]`. The script applies the terminal chrome (dark
+   background, macOS traffic-light dots, green `$ command` line, Red Hat Mono)
+   and HTML-escapes everything.
+
+3. **Serve** the render directory over localhost:
+
+   ```bash
+   python3 -m http.server 18921 -d /tmp/term &
+   ```
+
+4. **Capture** just the terminal box (the `#term` selector excludes the page
+   background):
+
+   ```
+   playwright-cli -s=workshop-screenshots open http://localhost:18921/02.html
+   playwright-cli -s=workshop-screenshots run-code "async page => { await page.waitForLoadState('networkidle'); }"
+   playwright-cli -s=workshop-screenshots screenshot "#term" \
+     --filename ~/git/zt-<slug>-showroom/content/modules/ROOT/assets/images/02-dsc-ready.png
+   ```
+
+5. **Embed** like any other screenshot (deterministic `NN-` filename, verify the
+   pixels before embedding).
+
+### Styling details
+
+- **Width:** pass enough px that no line wraps — `term.py` clips overflow
+  (`white-space: pre; overflow: hidden`). Wide tables, diffs, and kustomize
+  inflation output need 1000–1100; single-command outputs are fine at 900.
+- **Titles:** quote the actual command, then a short outcome note in
+  parentheses: `"curl POST /maas-api/v1/api-keys (standard tier minted;
+  performance tier rejected)"`.
+- **Display width** in the AsciiDoc embed: 800 default, 850 for wide renders
+  (tables, side-by-side diffs, log dumps).
+
+### Redaction rules for rendered text
+
+- API keys / tokens as short prefixes only: `sk-oai-1ZJqw...` — never a full value.
+- Never include passwords, pull secrets, or bearer tokens in rendered output.
+- Prefer templated commands (`${HOST}`, `$(oc whoami -t)`) in the quoted command
+  line; the rendered output itself should show real values only where they are
+  not secret.
 
 ## Session Setup
 
